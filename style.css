@@ -1,0 +1,22 @@
+body {
+  margin: 0;
+  font-family: -apple-system, "Hiragino Sans", "Noto Sans JP", sans-serif;
+  background: #f6f8f7;
+  color: #1b2420;
+  line-height: 1.6;
+}
+
+main {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 32px 20px;
+}
+
+h1 {
+  font-size: 1.8rem;
+  margin: 0 0 12px;
+}
+
+.ja {
+  color: #4a5a52;
+}
