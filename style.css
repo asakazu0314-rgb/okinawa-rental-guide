@@ -20,3 +20,46 @@ h1 {
 .ja {
   color: #4a5a52;
 }
+
+.tool-check {
+  margin-top: 32px;
+  padding: 20px;
+  background: #ffffff;
+  border: 1px solid #d5ddd9;
+  border-radius: 12px;
+}
+
+.tool-check h2 {
+  font-size: 1.2rem;
+  margin: 0 0 12px;
+}
+
+.tool-check label {
+  display: block;
+  font-size: 0.95rem;
+  margin-bottom: 6px;
+}
+
+.tool-check input {
+  width: 100%;
+  box-sizing: border-box;
+  font-size: 1rem;
+  padding: 10px 12px;
+  border: 1px solid #b9c5bf;
+  border-radius: 8px;
+}
+
+.tool-check button {
+  margin-top: 12px;
+  font-size: 1rem;
+  padding: 10px 18px;
+  border: none;
+  border-radius: 8px;
+  background: #24503b;
+  color: #ffffff;
+}
+
+#result {
+  margin-top: 12px;
+  font-weight: bold;
+}

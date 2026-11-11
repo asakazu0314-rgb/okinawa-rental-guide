@@ -11,6 +11,23 @@
     <h1>ようこそ沖縄へ！</h1>
     <p>This is a test page. If you can read this on your iPad, the preview works.</p>
     <p class="ja">テスト用のページです。iPadのSafariで読めたら、プレビューは成功です。</p>
+
+    <section class="tool-check">
+      <h2>iPad Tool Check</h2>
+      <label for="sample">Type something / 何か入力してください</label>
+      <input id="sample" type="text" placeholder="e.g. Hello Okinawa">
+      <button id="show" type="button">Show / 表示する</button>
+      <p id="result" aria-live="polite"></p>
+    </section>
   </main>
+
+  <script>
+    document.getElementById('show').addEventListener('click', function () {
+      var text = document.getElementById('sample').value.trim();
+      document.getElementById('result').textContent = text
+        ? 'You typed: ' + text
+        : 'Please type something first. / まず何か入力してください。';
+    });
+  </script>
 </body>
 </html>
