@@ -1,0 +1,1 @@
+# okinawa-rental-guide
