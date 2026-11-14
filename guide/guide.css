@@ -131,3 +131,26 @@ mark.ph { background: var(--ph-bg); color: var(--ph-text); outline: 1.5px dashed
 .rfoot { margin-top: 24px; }
 
 .ver { margin-top: 24px; text-align: center; color: var(--sub); font-size: 13px; }
+
+/* 確認モード（店長が同じ画面で確認・記入する） */
+.ehelp { margin: 12px 16px 0; padding: 10px 12px; border-radius: 10px; background: var(--main-soft); font-size: 15px; }
+main.editing { padding-bottom: 96px; }
+.editing .ed { position: relative; cursor: pointer; border-radius: 8px; outline: 2px dashed transparent; outline-offset: 2px; }
+.editing .ed:hover, .editing .ed:active { outline-color: var(--main); }
+.editing .ed.st-ok { box-shadow: inset 4px 0 0 #2E7D4F; }
+.editing .ed.st-fix { box-shadow: inset 4px 0 0 var(--money); background: var(--money-bg); }
+.editing .ed.st-skip { opacity: .45; text-decoration: line-through; }
+.editing .li.money.ed:not(.st-ok):not(.st-fix):not(.st-skip),
+.editing .tbl.money tr.ed:not(.st-ok):not(.st-fix):not(.st-skip) { outline: 2px solid var(--money); }
+mark.ph.filled { background: #DDF2E3; color: #1E5B35; outline: 1.5px solid #2E7D4F; }
+
+.ebar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 10px 16px calc(10px + env(safe-area-inset-bottom)); background: var(--card); border-top: 1px solid var(--line); font-size: 14px; color: var(--sub); }
+.ebar button { min-height: 44px; padding: 0 18px; border: 0; border-radius: 10px; background: var(--main); color: #fff; font-size: 16px; font-weight: 700; }
+
+.sheet-wrap { position: fixed; inset: 0; z-index: 30; background: rgba(0,0,0,.35); display: none; align-items: flex-end; justify-content: center; }
+.sheet-wrap.open { display: flex; }
+.sheet { width: 100%; max-width: 560px; max-height: 85vh; overflow: auto; background: var(--card); border-radius: 16px 16px 0 0; padding: 16px 16px calc(16px + env(safe-area-inset-bottom)); }
+.phin { display: block; margin-top: 10px; font-size: 14px; color: var(--sub); }
+.phin input { display: block; width: 100%; margin-top: 4px; min-height: 44px; font-size: 16px; padding: 8px 10px; border: 1.5px solid var(--ph-line); border-radius: 8px; background: #FFFDF0; }
+.sheet textarea { width: 100%; margin-top: 8px; min-height: 64px; font-size: 16px; padding: 8px; border-radius: 8px; border: 1px solid var(--line); }

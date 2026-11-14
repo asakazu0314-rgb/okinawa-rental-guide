@@ -50,8 +50,14 @@
     return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; });
   }
   // 差し替え欄に色をつける
-  function fmt(s) {
-    return esc(s).replace(PH, '<mark class="ph">$1</mark>');
+  var editVals = null; // 確認モードで店長が入れた値 { 'A-14': ['1時間ごとに1,000円', ...] }
+  function fmt(s, id) {
+    var k = 0;
+    return esc(s).replace(PH, function (m) {
+      var v = editVals && id && editVals[id] && editVals[id][k];
+      k++;
+      return v ? '<mark class="ph filled">' + esc(v) + '</mark>' : '<mark class="ph">' + m + '</mark>';
+    });
   }
   function tx(o) { return o[lang]; }
 
@@ -86,8 +92,8 @@
       case 'h1': return '<h1' + a + '>' + fmt(tx(b)) + '</h1>';
       case 'lead': return '<p class="lead"' + a + '>' + fmt(tx(b)) + '</p>';
       case 'summary':
-        return '<div class="summary"' + a + '>' + b.items.map(function (it) {
-          return '<a class="sum-row" href="#' + it.jump + '">' + icon(it.icon) + '<span>' + fmt(tx(it)) + '</span></a>';
+        return '<div class="summary"' + a + '>' + b.items.map(function (it, i) {
+          return '<a class="sum-row" id="' + b.id + '-' + (i + 1) + '" href="#' + it.jump + '">' + icon(it.icon) + '<span>' + fmt(tx(it)) + '</span></a>';
         }).join('') + '</div>';
       case 'h2': return '<h2' + a + '>' + icon(b.icon) + '<span>' + fmt(tx(b)) + '</span></h2>';
       case 'li':
@@ -109,8 +115,8 @@
       case 'carphotos': return carPhotos();
       case 'table':
         return '<table class="tbl' + (b.important ? ' money' : '') + '"' + a + '><thead><tr>' + b.head[lang].map(function (h) { return '<th>' + esc(h) + '</th>'; }).join('') +
-          '</tr></thead><tbody>' + b.rows.map(function (r) {
-            return '<tr>' + r[lang].map(function (c) { return '<td>' + fmt(c) + '</td>'; }).join('') + '</tr>';
+          '</tr></thead><tbody>' + b.rows.map(function (r, i) {
+            return '<tr id="' + b.id + '-' + (i + 1) + '">' + r[lang].map(function (c) { return '<td>' + fmt(c) + '</td>'; }).join('') + '</tr>';
           }).join('') + '</tbody></table>';
       case 'example':
         return '<div class="example"' + a + '><span class="badge">' + esc(tx(G.ui.exampleOnly)) + '</span><h3>' + fmt(tx(b)) + '</h3>' +
@@ -160,70 +166,115 @@
     return out;
   }
 
-  function renderReview(root) {
-    var items = flatten();
+  // ---- 確認モード：お客様と同じ画面のまま、店長が文をタップして確認・記入する ----
+  function setupEdit(root, items) {
+    var byId = {};
+    items.forEach(function (it) { byId[it.id] = it; });
     var saved = {};
     try { saved = JSON.parse(store('guide-review') || '{}') || {}; } catch (e) { saved = {}; }
     function save() { store('guide-review', JSON.stringify(saved)); }
 
-    var html = '<header><span class="shop">' + esc(G.shop.ja) + '　確認シート（' + G.version + '）</span></header>' +
-      '<main class="review"><p class="lead">各文を読んで「確認済み」か「修正したい」を押してください。<b>お金と事故に関わる文（重要）</b>を必ず確認してください。最後に「結果をコピー」を押して、LINEに貼って送ってください。</p>' +
-      '<p class="progress" id="progress"></p>' +
-      '<label class="onlyimp"><input type="checkbox" id="onlyimp"> 重要な文だけ表示する</label>';
+    // 画面上の文に印をつける
     items.forEach(function (it) {
-      html += '<div class="rcard' + (it.important ? ' imp' : '') + '" data-id="' + it.id + '">' +
-        '<div class="rid">' + it.id + (it.important ? ' <span class="tag">重要</span>' : '') + '</div>' +
-        '<p class="rja">' + fmt(it.ja) + '</p>' +
-        '<details><summary>英語を見る</summary><p>' + fmt(it.en) + '</p></details>' +
-        '<div class="rbtns"><button data-v="ok">確認済み</button><button data-v="fix">修正したい</button>' +
-        (it.optional ? '<button data-v="skip">当店では使わない</button>' : '') + '</div>' +
-        '<textarea placeholder="どう直したいですか（短くてOK）。金額などの記入もここに"></textarea></div>';
+      var el = document.getElementById(it.id);
+      if (el) { el.setAttribute('data-eid', it.id); el.classList.add('ed'); }
     });
-    html += '<div class="rfoot"><button class="btn" id="copy">結果をコピー（LINEに貼る）</button><p class="note" id="copied"></p></div><p class="ver">' + G.version + ' / build 3</p></main>';
-    root.innerHTML = html;
-
-    function refresh() {
-      var ok = 0;
-      root.querySelectorAll('.rcard').forEach(function (c) {
-        var s = saved[c.dataset.id] || {};
-        c.querySelectorAll('.rbtns button').forEach(function (bt) { bt.classList.toggle('on', bt.dataset.v === s.v); });
-        var ta = c.querySelector('textarea');
-        ta.style.display = s.v === 'fix' ? 'block' : 'none';
-        if (ta.value !== (s.note || '')) ta.value = s.note || '';
-        if (s.v) ok++;
+    function decorate() {
+      var ok = 0, onPage = 0;
+      root.querySelectorAll('[data-eid]').forEach(function (el) {
+        var id = el.getAttribute('data-eid'), st = saved[id] || {};
+        onPage++;
+        el.classList.remove('st-ok', 'st-fix', 'st-skip');
+        if (st.v) { el.classList.add('st-' + st.v); ok++; }
+        var k = 0;
+        el.querySelectorAll('mark.ph').forEach(function (m) {
+          if (m.closest('[data-eid]') !== el) return;
+          if (!m.dataset.orig) m.dataset.orig = m.textContent;
+          var v = st.vals && st.vals[k];
+          m.textContent = v ? v : m.dataset.orig;
+          m.classList.toggle('filled', !!v);
+          k++;
+        });
       });
-      document.getElementById('progress').textContent = '確認した文：' + ok + '／' + items.length + '件';
+      var all = items.filter(function (it) { return (saved[it.id] || {}).v; }).length;
+      document.getElementById('ebar-progress').textContent = 'このページ ' + ok + '／' + onPage + '　全体 ' + all + '／' + items.length;
     }
+
+    // 下からせり上がる確認パネル
+    var sheet = document.createElement('div');
+    sheet.className = 'sheet-wrap';
+    sheet.innerHTML = '<div class="sheet" role="dialog" aria-modal="true"><div class="sheet-body"></div></div>';
+    document.body.appendChild(sheet);
+    var body = sheet.querySelector('.sheet-body');
+
+    function open(id) {
+      var it = byId[id], st = saved[id] = saved[id] || {};
+      var phs = (it.ja.match(PH) || []);
+      st.vals = st.vals || [];
+      var h = '<div class="rid">' + id + (it.important ? ' <span class="tag">重要（お金・事故）</span>' : '') + '</div>' +
+        '<p class="rja">' + fmt(it.ja) + '</p>' +
+        '<details><summary>お客様に見える英語</summary><p>' + fmt(it.en) + '</p></details>';
+      phs.forEach(function (ph, i) {
+        h += '<label class="phin">' + esc(ph.replace(/^［店が記入：?|］$/g, '') || '記入') +
+          '<input type="text" data-i="' + i + '" value="' + esc(st.vals[i] || '') + '" placeholder="例：店のルールを入力"></label>';
+      });
+      h += '<div class="rbtns"><button data-v="ok">確認済み</button><button data-v="fix">修正したい</button>' +
+        (it.optional ? '<button data-v="skip">当店では使わない</button>' : '') + '</div>' +
+        '<textarea placeholder="どう直したいですか（短くてOK）"></textarea>' +
+        '<button class="btn" data-close>閉じる</button>';
+      body.innerHTML = h;
+      var ta = body.querySelector('textarea');
+      function sync() {
+        body.querySelectorAll('.rbtns button').forEach(function (b) { b.classList.toggle('on', b.dataset.v === st.v); });
+        ta.style.display = st.v === 'fix' ? 'block' : 'none';
+      }
+      ta.value = st.note || '';
+      body.onclick = function (e) {
+        var b = e.target.closest('.rbtns button');
+        if (b) { st.v = st.v === b.dataset.v ? '' : b.dataset.v; save(); sync(); }
+        if (e.target.closest('[data-close]')) close();
+      };
+      body.oninput = function (e) {
+        if (e.target.tagName === 'TEXTAREA') st.note = e.target.value;
+        if (e.target.dataset.i !== undefined) st.vals[+e.target.dataset.i] = e.target.value.trim();
+        save();
+      };
+      sync();
+      sheet.classList.add('open');
+    }
+    function close() { sheet.classList.remove('open'); decorate(); }
+    sheet.addEventListener('click', function (e) { if (e.target === sheet) close(); });
+
     root.addEventListener('click', function (e) {
-      var bt = e.target.closest('.rbtns button');
-      if (!bt) return;
-      var id = bt.closest('.rcard').dataset.id;
-      saved[id] = saved[id] || {};
-      saved[id].v = saved[id].v === bt.dataset.v ? '' : bt.dataset.v;
-      save(); refresh();
+      var el = e.target.closest('[data-eid]');
+      if (!el || !root.contains(el)) return;
+      e.preventDefault();
+      open(el.getAttribute('data-eid'));
     });
-    root.addEventListener('input', function (e) {
-      if (e.target.tagName !== 'TEXTAREA') return;
-      var id = e.target.closest('.rcard').dataset.id;
-      saved[id] = saved[id] || {}; saved[id].note = e.target.value; save();
-    });
-    document.getElementById('onlyimp').addEventListener('change', function (e) {
-      root.querySelectorAll('.rcard').forEach(function (c) { c.style.display = e.target.checked && !c.classList.contains('imp') ? 'none' : ''; });
-    });
+
+    // 下の固定バー：進み具合と結果のコピー
+    var bar = document.createElement('div');
+    bar.className = 'ebar';
+    bar.innerHTML = '<span id="ebar-progress"></span><button id="copy">結果をコピー</button>';
+    document.body.appendChild(bar);
     document.getElementById('copy').addEventListener('click', function () {
-      var ok = [], fix = [], skip = [], none = [];
+      var ok = [], fix = [], skip = [], none = [], fill = [];
       items.forEach(function (it) {
-        var s = saved[it.id] || {};
-        if (s.v === 'ok') ok.push(it.id);
-        else if (s.v === 'fix') fix.push('【修正】' + it.id + '：' + (s.note || '（内容未記入）'));
-        else if (s.v === 'skip') skip.push(it.id);
+        var st = saved[it.id] || {};
+        (st.vals || []).forEach(function (v, i) {
+          if (v) fill.push('【記入】' + it.id + '（' + ((it.ja.match(PH) || [])[i] || '').replace(/^［店が記入：?|］$/g, '') + '）＝' + v);
+        });
+        if (st.v === 'ok') ok.push(it.id);
+        else if (st.v === 'fix') fix.push('【修正】' + it.id + '：' + (st.note || '（内容未記入）'));
+        else if (st.v === 'skip') skip.push(it.id);
         else none.push(it.id);
       });
-      var d = new Date();
-      var text = G.shop.ja + ' 確認結果 ' + G.version + '（' + (d.getMonth() + 1) + '/' + d.getDate() + '）\n' +
-        '確認済み ' + ok.length + '件／修正したい ' + fix.length + '件／使わない ' + skip.length + '件／未確認 ' + none.length + '件\n' +
-        fix.join('\n') + (skip.length ? '\n【使わない】' + skip.join(', ') : '') + (none.length ? '\n【未確認】' + none.join(', ') : '');
-      var done = function () { document.getElementById('copied').textContent = 'コピーしました。LINEに貼り付けて送ってください。'; };
+      var dt = new Date();
+      var text = G.shop.ja + ' 確認結果 ' + G.version + '（' + (dt.getMonth() + 1) + '/' + dt.getDate() + '）\n' +
+        '確認済み ' + ok.length + '件／修正したい ' + fix.length + '件／使わない ' + skip.length + '件／未確認 ' + none.length + '件' +
+        (fill.length ? '\n' + fill.join('\n') : '') + (fix.length ? '\n' + fix.join('\n') : '') +
+        (skip.length ? '\n【使わない】' + skip.join(', ') : '') + (none.length ? '\n【未確認】' + none.join(', ') : '');
+      var done = function () { var b = document.getElementById('copy'); b.textContent = 'コピーしました'; setTimeout(function () { b.textContent = '結果をコピー'; }, 2500); };
       if (navigator.clipboard && navigator.clipboard.writeText) {
         navigator.clipboard.writeText(text).then(done, function () { fallback(text); done(); });
       } else { fallback(text); done(); }
@@ -233,17 +284,27 @@
       try { document.execCommand('copy'); } catch (e) {}
       document.body.removeChild(t);
     }
-    refresh();
+    decorate();
   }
 
   // ---- 表示 ----
   var root = document.getElementById('app');
-  document.documentElement.lang = review ? 'ja' : lang;
-  if (review) { renderReview(root); return; }
-  store('guide-lang', lang);
+  if (review) lang = 'ja';
+  document.documentElement.lang = lang;
+  if (!review) store('guide-lang', lang);
   var n = countPlaceholders();
-  root.innerHTML = header() +
-    (n ? '<div class="unfilled">' + esc(tx(G.ui.unfilled)) + ' (' + n + ')</div>' : '') +
-    '<main>' + G.pages[page].map(block).join('') + '<p class="ver">' + G.version + ' / build 3</p></main>';
-  document.title = tx(G.shop) + ' — ' + tx(G.ui.tabs[page]);
+  var head = header();
+  if (review) {
+    // 確認モード：言語ボタンの代わりに「お客様の画面を見る」、タブは確認モードのページへ
+    head = '<header><span class="shop">' + esc(G.shop.ja) + '　確認モード</span>' +
+      '<a class="lang on" href="' + href(page, 'en') + '" target="_blank">英語画面</a></header>' +
+      '<nav class="tabs"><a class="tab' + (page === 'return' ? ' on' : '') + '" href="review.html">返却</a>' +
+      '<a class="tab' + (page === 'insurance' ? ' on' : '') + '" href="review-insurance.html">保険・NOC</a></nav>' +
+      '<div class="ehelp">お客様と同じ画面です。<b>文をタップ</b>すると、確認・修正・黄色い欄への記入ができます。<b>枠が茶色の文（お金・事故）</b>は必ず確認してください。最後に下の「結果をコピー」を押して、LINEで送ってください。</div>';
+  }
+  root.innerHTML = head +
+    (n && !review ? '<div class="unfilled">' + esc(tx(G.ui.unfilled)) + ' (' + n + ')</div>' : '') +
+    '<main' + (review ? ' class="editing"' : '') + '>' + G.pages[page].map(block).join('') + '<p class="ver">' + G.version + ' / build 4</p></main>';
+  document.title = review ? G.shop.ja + ' 確認モード' : tx(G.shop) + ' — ' + tx(G.ui.tabs[page]);
+  if (review) setupEdit(root, flatten());
 })();
