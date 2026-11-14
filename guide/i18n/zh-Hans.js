@@ -140,3 +140,4 @@ Object.assign(window.GUIDE_I18N['zh-Hans'], {
   'D-10-9t': 'ETC 卡（高速公路收费）', 'D-10-9': 'ETC 卡插槽：[店家填写：位置]。进入高速公路前请插入卡片。',
 });
 Object.assign(window.GUIDE_LTEXT['zh-Hans'], { sample: '示例图', tapnum: '请点击数字' });
+Object.assign(window.GUIDE_LTEXT['zh-Hans'], { choose: '请选择您的车', car_compact: '小型车', car_minivan: 'MPV（多功能车）', car_kei: '轻型车（K-car）', photoNote: '这是示例图。店家会加上这辆车的照片。' });

@@ -203,3 +203,17 @@ mark.ph.filled { background: #DDF2E3; color: #1E5B35; outline: 1.5px solid #2E7D
   border-radius: 10px; padding: 10px; font: inherit; font-size: 15px; color: var(--text); cursor: pointer; min-height: 48px; }
 .hsrow.on { border-color: #E07B2A; box-shadow: 0 0 0 2px #E07B2A inset; }
 .hsrow.on .num, .hsdetail .num { background: #E07B2A; }
+
+/* 車種を選ぶ・各操作の写真 */
+.cartitle { font-weight: 700; margin: 4px 0 8px; }
+.carpick { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 12px; }
+.carbtn { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 8px 6px; font: inherit; color: var(--text);
+  display: flex; flex-direction: column; align-items: center; gap: 2px; cursor: pointer; }
+.carbtn svg { width: 100%; max-width: 110px; fill: #9AA6B1; }
+.carbtn b { font-size: 14px; line-height: 1.3; text-align: center; }
+.carbtn small { font-size: 11px; color: var(--sub); text-align: center; line-height: 1.3; }
+.carbtn.on { border-color: var(--main); box-shadow: 0 0 0 2px var(--main) inset; background: var(--main-soft); }
+.carbtn.on svg { fill: var(--main); }
+.hsphoto { position: relative; border-radius: 10px; overflow: hidden; margin: 4px 0 10px; background: #2B333B; }
+.hsphoto svg, .hsphoto img { display: block; width: 100%; height: auto; }
+.hsnote { font-size: 13px; color: var(--sub); margin-top: 6px !important; }

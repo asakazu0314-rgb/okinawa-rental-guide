@@ -129,9 +129,11 @@
   }
 
   // ---- 車の操作：図の番号をタップすると説明が出る ----
-  // 見本のイラスト（右ハンドル車の運転席。特定の車種ではない）。店の写真があれば photo を使う
-  function dashArt() {
-    return '<svg viewBox="0 0 400 260" aria-hidden="true" class="dash">' +
+  // 見本のイラスト（右ハンドル車の運転席。特定の車種ではない）。car.art で少し描き分ける
+  function dashArt(car) {
+    var art = car.art || {}, P = car.pos || {};
+    function at(k) { var p = P[k] || [0, 0]; return [p[0] * 4, p[1] * 2.6]; }
+    var s = '<svg viewBox="0 0 400 260" aria-hidden="true" class="dash">' +
       '<defs><linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#BFDCEB"/><stop offset="1" stop-color="#E8F3F7"/></linearGradient>' +
       '<linearGradient id="dsh" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4A5560"/><stop offset="1" stop-color="#2B333B"/></linearGradient>' +
       '<radialGradient id="whl" cx=".5" cy=".4" r=".6"><stop offset="0" stop-color="#3C4650"/><stop offset="1" stop-color="#1C2228"/></radialGradient></defs>' +
@@ -143,10 +145,23 @@
       '<rect x="102" y="102" width="76" height="32" rx="3" fill="#2D4C5C"/>' +
       '<path d="M140 156l-9 15h18z" fill="#D2463E" stroke="#fff" stroke-width="1.5"/>' +
       '<rect x="126" y="150" width="28" height="26" rx="5" fill="none" stroke="#6C7884"/>' +
-      '<rect x="112" y="186" width="76" height="70" rx="10" fill="#262D34" stroke="#4D5761"/>' +
-      '<rect x="146" y="194" width="8" height="20" rx="3" fill="#8D99A4"/><circle cx="150" cy="198" r="9" fill="#C7CFD6"/>' +
-      '<text x="168" y="214" font-size="11" fill="#C7CFD6" font-family="sans-serif">P R N D</text>' +
-      '<rect x="102" y="226" width="18" height="12" rx="3" fill="#47525D" stroke="#7A8691"/>' +
+      '<rect x="112" y="186" width="76" height="70" rx="10" fill="#262D34" stroke="#4D5761"/>';
+    var sh = at('shift');
+    if (art.shift === 'dash') {
+      s += '<rect x="' + (sh[0] - 14) + '" y="' + (sh[1] - 18) + '" width="28" height="40" rx="6" fill="#1A2026" stroke="#6C7884"/>' +
+        '<path d="M' + sh[0] + ' ' + (sh[1] - 12) + 'v28" stroke="#47525D" stroke-width="4"/>' +
+        '<path d="M' + sh[0] + ' ' + (sh[1] + 2) + 'l-14 10" stroke="#8D99A4" stroke-width="5" stroke-linecap="round"/><circle cx="' + (sh[0] - 15) + '" cy="' + (sh[1] + 13) + '" r="6" fill="#C7CFD6"/>' +
+        '<circle cx="138" cy="205" r="9" fill="none" stroke="#4D5761"/><circle cx="162" cy="205" r="9" fill="none" stroke="#4D5761"/>';
+    } else {
+      s += '<rect x="' + (sh[0] - 4) + '" y="' + (sh[1] - 11) + '" width="8" height="20" rx="3" fill="#8D99A4"/><circle cx="' + sh[0] + '" cy="' + (sh[1] - 7) + '" r="9" fill="#C7CFD6"/>' +
+        '<text x="' + (sh[0] + 18) + '" y="' + (sh[1] + 9) + '" font-size="11" fill="#C7CFD6" font-family="sans-serif">P R N D</text>';
+    }
+    var pb = at('pbrake');
+    s += art.pbrake === 'pedal'
+      ? '<rect x="' + (pb[0] - 9) + '" y="' + (pb[1] - 14) + '" width="18" height="12" rx="2" fill="#47525D" stroke="#7A8691"/>'
+      : '<rect x="' + (pb[0] - 9) + '" y="' + (pb[1] - 6) + '" width="18" height="12" rx="3" fill="#47525D" stroke="#7A8691"/>';
+    var et = at('etc');
+    s += '<rect x="' + (et[0] - 15) + '" y="' + (et[1] - 5) + '" width="30" height="10" rx="2" fill="#11171C" stroke="#6C7884"/>' +
       '<rect x="250" y="98" width="64" height="34" rx="14" fill="#11171C" stroke="#5E6A75"/>' +
       '<circle cx="268" cy="115" r="10" fill="none" stroke="#9FB4C2" stroke-width="2"/><circle cx="296" cy="115" r="10" fill="none" stroke="#9FB4C2" stroke-width="2"/>' +
       '<path d="M218 154l-24-14" stroke="#7A8691" stroke-width="7" stroke-linecap="round"/>' +
@@ -156,14 +171,62 @@
       '<path d="M258 170h-50M302 170h50M280 192v42" stroke="#2B333B" stroke-width="12"/>' +
       '<circle cx="350" cy="200" r="11" fill="#1A2026" stroke="#C7CFD6" stroke-width="2"/>' +
       '<text x="350" y="203" font-size="6" fill="#C7CFD6" text-anchor="middle" font-family="sans-serif">POWER</text>' +
-      '<rect x="236" y="234" width="30" height="10" rx="2" fill="#11171C" stroke="#6C7884"/>' +
       '<rect x="366" y="230" width="14" height="18" rx="3" fill="#47525D" stroke="#7A8691"/>' +
       '</svg>';
+    return s;
+  }
+  // 車種カードの小さな絵（横から見た形）
+  var CARSIL = {
+    compact: '<path d="M8 40h104v-8l-10-4-16-14H40L24 28 10 31z"/><circle cx="32" cy="42" r="8"/><circle cx="90" cy="42" r="8"/>',
+    minivan: '<path d="M6 40h108v-12l-8-4-6-16H22L10 22 6 30z"/><circle cx="30" cy="42" r="8"/><circle cx="92" cy="42" r="8"/>',
+    kei: '<path d="M18 40h84V14l-6-6H36L26 22l-8 4z"/><circle cx="38" cy="42" r="7"/><circle cx="84" cy="42" r="7"/>',
+  };
+  // 各操作のアップの見本の図（店の写真があれば写真を使う）
+  function closeArt(key, car) {
+    var bg = '<rect width="240" height="140" fill="#2B333B"/>', g = '';
+    var lever = function (x1, y1, x2, y2) { return '<path d="M' + x1 + ' ' + y1 + 'L' + x2 + ' ' + y2 + '" stroke="#8D99A4" stroke-width="14" stroke-linecap="round"/>'; };
+    var rim = function (cx) { return '<circle cx="' + cx + '" cy="70" r="90" fill="none" stroke="#1C2228" stroke-width="22"/>'; };
+    var txt = function (x, y, t, sz, c) { return '<text x="' + x + '" y="' + y + '" font-size="' + (sz || 14) + '" fill="' + (c || '#E6EBEF') + '" text-anchor="middle" font-family="sans-serif" font-weight="700">' + t + '</text>'; };
+    switch (key) {
+      case 'turn': g = rim(-40) + lever(60, 70, 200, 60) +
+        '<path d="M150 30l14-10v20zM150 105l14 10v-20z" fill="#5BC06B"/>' + txt(196, 30, '▲', 12, '#5BC06B') + txt(196, 112, '▼', 12, '#5BC06B'); break;
+      case 'wiper': g = rim(280) + lever(180, 70, 40, 60) +
+        '<path d="M60 112a40 40 0 0 1 60-30" stroke="#9FD3F0" stroke-width="5" fill="none"/><path d="M70 120l38-34" stroke="#E6EBEF" stroke-width="4"/>'; break;
+      case 'light': g = rim(-40) + lever(60, 70, 170, 64) +
+        '<rect x="160" y="48" width="52" height="34" rx="8" fill="#A9B4BE"/>' + txt(186, 40, 'OFF · AUTO · ☀', 13) + '<path d="M186 82v18" stroke="#F2C14E" stroke-width="3"/>'; break;
+      case 'start': g = '<circle cx="80" cy="70" r="40" fill="#1A2026" stroke="#C7CFD6" stroke-width="4"/>' + txt(80, 66, 'POWER', 14) + txt(80, 84, 'START', 11, '#9AA6B1') +
+        '<rect x="160" y="40" width="44" height="70" rx="8" fill="#47525D" stroke="#9AA6B1" stroke-width="2"/>' + txt(182, 128, 'BRAKE', 12, '#9AA6B1'); break;
+      case 'hazard': g = '<rect x="80" y="30" width="80" height="80" rx="12" fill="#1A2026" stroke="#6C7884" stroke-width="3"/><path d="M120 46l-26 46h52z" fill="none" stroke="#E5463B" stroke-width="7" stroke-linejoin="round"/>'; break;
+      case 'shift': g = '<rect x="70" y="14" width="100" height="112" rx="14" fill="#1A2026" stroke="#6C7884" stroke-width="2"/>' +
+        txt(150, 36, 'P', 16) + txt(150, 60, 'R', 16) + txt(150, 84, 'N', 16) + txt(150, 108, 'D', 16, '#5BC06B') +
+        '<path d="M110 30v80" stroke="#47525D" stroke-width="8"/><circle cx="110" cy="38" r="16" fill="#C7CFD6"/>'; break;
+      case 'pbrake': g = (car.art || {}).pbrake === 'pedal'
+        ? '<rect x="90" y="28" width="60" height="44" rx="6" fill="#47525D" stroke="#9AA6B1" stroke-width="2"/><path d="M120 72v40" stroke="#47525D" stroke-width="12"/>' + txt(120, 56, '(P)', 18)
+        : '<rect x="82" y="40" width="76" height="60" rx="10" fill="#1A2026" stroke="#6C7884" stroke-width="2"/>' + txt(120, 78, '(P)', 22, '#E5463B'); break;
+      case 'fuel': g = '<rect x="30" y="40" width="70" height="50" rx="8" fill="#47525D" stroke="#9AA6B1" stroke-width="2"/><path d="M50 56h16v22H50zM66 62l8 6v14" stroke="#E6EBEF" stroke-width="3" fill="none"/>' +
+        '<circle cx="175" cy="70" r="44" fill="#1A2026" stroke="#6C7884" stroke-width="3"/><path d="M145 82a34 34 0 0 1 60 0" stroke="#E6EBEF" stroke-width="3" fill="none"/>' +
+        '<path d="M165 92h12v14h-12z" fill="#E6EBEF"/>' + txt(193, 104, '◀', 13, '#F2C14E'); break;
+      case 'etc': g = '<rect x="40" y="48" width="160" height="50" rx="8" fill="#1A2026" stroke="#6C7884" stroke-width="2"/><rect x="62" y="68" width="116" height="6" rx="3" fill="#000"/>' +
+        '<rect x="84" y="18" width="72" height="48" rx="5" fill="#E6EBEF"/>' + txt(120, 48, 'ETC', 16, '#1E4E5F'); break;
+    }
+    return '<svg viewBox="0 0 240 140" aria-hidden="true">' + bg + g + '</svg>';
+  }
+  function currentCar() {
+    var cars = G.cars || [{ id: 'compact', pos: {} }];
+    var want = params.get('car') || store('guide-car');
+    return cars.filter(function (c) { return c.id === want; })[0] || cars[0];
   }
   function hotspots(b) {
-    var img = b.photo ? '<img src="' + esc(b.photo) + '" alt="">' : dashArt() + '<span class="hsbadge">' + esc(lt('sample')) + '</span>';
-    return '<div class="hs"' + ' id="' + b.id + '"><div class="hspic">' + img + b.items.map(function (it, i) {
-      return '<button type="button" class="hsdot" data-i="' + i + '" style="left:' + it.x + '%;top:' + it.y + '%" aria-label="' + (i + 1) + ' ' + esc(tx(it.title)) + '">' + (i + 1) + '</button>';
+    var cars = G.cars || [], car = currentCar();
+    var pick = cars.length > 1 ? '<p class="cartitle">' + esc(lt('choose')) + '</p><div class="carpick">' + cars.map(function (c) {
+      return '<button type="button" class="carbtn' + (c.id === car.id ? ' on' : '') + '" data-car="' + c.id + '">' +
+        '<svg viewBox="0 0 120 52" aria-hidden="true">' + (CARSIL[c.id] || CARSIL.compact) + '</svg>' +
+        '<b>' + esc(lt('car_' + c.id)) + '</b><small>' + fmt(tx(c.model)) + '</small></button>';
+    }).join('') + '</div>' : '';
+    var img = car.photo ? '<img src="' + esc(car.photo) + '" alt="">' : dashArt(car) + '<span class="hsbadge">' + esc(lt('sample')) + '</span>';
+    return '<div class="hs" id="' + b.id + '">' + pick + '<div class="hspic">' + img + b.items.map(function (it, i) {
+      var p = (car.pos || {})[it.key] || [50, 50];
+      return '<button type="button" class="hsdot" data-i="' + i + '" style="left:' + p[0] + '%;top:' + p[1] + '%" aria-label="' + (i + 1) + ' ' + esc(tx(it.title)) + '">' + (i + 1) + '</button>';
     }).join('') + '</div>' +
       '<div class="hsdetail" aria-live="polite"><p class="hshint">👆 ' + esc(lt('tapnum')) + '</p></div>' +
       '<ol class="hslist">' + b.items.map(function (it, i) {
@@ -171,16 +234,26 @@
       }).join('') + '</ol></div>';
   }
   function setupHotspots(root) {
-    root.querySelectorAll('.hs').forEach(function (wrap) {
+    root.querySelectorAll('.hs').forEach(function bind(wrap) {
       var b = G.pages[page].filter(function (x) { return x.id === wrap.id; })[0];
+      var car = currentCar();
       var detail = wrap.querySelector('.hsdetail');
       function show(i, fromList) {
-        var it = b.items[i];
+        var it = b.items[i], ph = (car.photos || {})[it.key];
         wrap.querySelectorAll('.hsdot, .hsrow').forEach(function (el) { el.classList.toggle('on', +el.dataset.i === i); });
-        detail.innerHTML = '<h3><span class="num">' + (i + 1) + '</span>' + esc(tx(it.title)) + '</h3><p>' + fmt(tx(it)) + '</p>';
+        detail.innerHTML = '<h3><span class="num">' + (i + 1) + '</span>' + esc(tx(it.title)) + '</h3>' +
+          '<div class="hsphoto">' + (ph ? '<img src="' + esc(ph) + '" alt="">' : closeArt(it.key, car) + '<span class="hsbadge">' + esc(lt('sample')) + '</span>') + '</div>' +
+          '<p>' + fmt(tx(it)) + '</p>' + (ph ? '' : '<p class="hsnote">' + esc(lt('photoNote')) + '</p>');
         if (fromList) wrap.querySelector('.hspic').scrollIntoView({ behavior: 'smooth', block: 'start' });
       }
       wrap.addEventListener('click', function (e) {
+        var cb = e.target.closest('.carbtn');
+        if (cb) {
+          store('guide-car', cb.dataset.car);
+          var tmp = document.createElement('div'); tmp.innerHTML = hotspots(b);
+          var nw = tmp.firstChild; wrap.parentNode.replaceChild(nw, wrap); bind(nw);
+          return;
+        }
         var el = e.target.closest('.hsdot, .hsrow');
         if (el) show(+el.dataset.i, el.classList.contains('hsrow'));
       });
@@ -493,7 +566,7 @@
   var draft = (G.draftLangs || []).indexOf(lang) >= 0 && !review;
   root.innerHTML = head + (draft ? '<div class="draftnote">' + esc(lt('draft')) + '</div>' : '') +
     (n && !review ? '<div class="unfilled">' + esc(tx(G.ui.unfilled)) + ' (' + n + ')</div>' : '') +
-    '<main' + (review ? ' class="editing"' : '') + '>' + G.pages[page].map(block).join('') + '<p class="ver">' + G.version + ' / build 11</p></main>';
+    '<main' + (review ? ' class="editing"' : '') + '>' + G.pages[page].map(block).join('') + '<p class="ver">' + G.version + ' / build 12</p></main>';
   document.title = review ? G.shop.ja + ' 確認モード' : tx(G.shop) + ' — ' + tx(G.ui.tabs[page]);
   if (review) setupEdit(root, flatten());
   if (page === 'check' && !review) setupCheck(root);

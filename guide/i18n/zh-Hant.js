@@ -140,3 +140,4 @@ Object.assign(window.GUIDE_I18N['zh-Hant'], {
   'D-10-9t': 'ETC 卡（高速公路收費）', 'D-10-9': 'ETC 卡插槽：[店家填寫：位置]。進入高速公路前請插入卡片。',
 });
 Object.assign(window.GUIDE_LTEXT['zh-Hant'], { sample: '範例圖', tapnum: '請點選數字' });
+Object.assign(window.GUIDE_LTEXT['zh-Hant'], { choose: '請選擇您的車', car_compact: '小型車', car_minivan: '休旅車（MPV）', car_kei: '輕型車（K-car）', photoNote: '這是範例圖。店家會加上這台車的照片。' });

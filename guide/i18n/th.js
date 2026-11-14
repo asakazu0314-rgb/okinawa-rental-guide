@@ -140,3 +140,4 @@ Object.assign(window.GUIDE_I18N['th'], {
   'D-10-9t': 'บัตร ETC (ค่าทางด่วน)', 'D-10-9': 'ช่องเสียบบัตร ETC: [ร้านกรอก: ตำแหน่ง] เสียบบัตรก่อนขึ้นทางด่วน',
 });
 Object.assign(window.GUIDE_LTEXT['th'], { sample: 'ภาพตัวอย่าง', tapnum: 'แตะที่ตัวเลข' });
+Object.assign(window.GUIDE_LTEXT['th'], { choose: 'เลือกรถของคุณ', car_compact: 'รถคอมแพกต์', car_minivan: 'รถมินิแวน', car_kei: 'รถเคคาร์ (รถเล็ก)', photoNote: 'นี่เป็นภาพตัวอย่าง ร้านจะเพิ่มรูปถ่ายของรถคันนี้' });

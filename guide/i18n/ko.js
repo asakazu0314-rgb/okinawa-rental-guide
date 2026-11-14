@@ -140,3 +140,4 @@ Object.assign(window.GUIDE_I18N['ko'], {
   'D-10-9t': 'ETC 카드(고속도로 요금)', 'D-10-9': 'ETC 카드 투입구: [업체 기입: 위치]. 고속도로에 들어가기 전에 카드를 넣으세요.',
 });
 Object.assign(window.GUIDE_LTEXT['ko'], { sample: '예시 그림', tapnum: '숫자를 눌러 주세요' });
+Object.assign(window.GUIDE_LTEXT['ko'], { choose: '차량을 선택해 주세요', car_compact: '소형차', car_minivan: '미니밴', car_kei: '경차', photoNote: '예시 그림입니다. 업체가 이 차의 사진을 추가합니다.' });
