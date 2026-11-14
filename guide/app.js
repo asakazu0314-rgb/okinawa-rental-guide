@@ -176,7 +176,7 @@
         return '<label class="booking"' + a + '>' + esc(tx(b)) + '<input id="custname" type="text" maxlength="40" autocomplete="name"></label>';
       case 'citem':
         return '<div class="citem"' + a + ' data-cid="' + b.id + '"><h3>' + esc(tx(b.title)) + '</h3><p>' + fmt(tx(b)) + '</p>' +
-          '<div class="crow"><a class="more" href="' + href(b.link, lang) + '" target="_blank">' + esc(lt('more')) + '</a>' +
+          '<div class="crow"><a class="more" href="' + href(b.link, lang) + '">' + esc(lt('more')) + '</a>' +
           '<button type="button" class="ubtn">' + esc(lt('understand')) + '</button></div></div>';
       case 'nav': return '<a class="btn nav"' + a + ' href="' + href(b.to, lang) + '">' + esc(tx(b)) + '</a>';
     }
@@ -433,7 +433,7 @@
   var draft = (G.draftLangs || []).indexOf(lang) >= 0 && !review;
   root.innerHTML = head + (draft ? '<div class="draftnote">' + esc(lt('draft')) + '</div>' : '') +
     (n && !review ? '<div class="unfilled">' + esc(tx(G.ui.unfilled)) + ' (' + n + ')</div>' : '') +
-    '<main' + (review ? ' class="editing"' : '') + '>' + G.pages[page].map(block).join('') + '<p class="ver">' + G.version + ' / build 9</p></main>';
+    '<main' + (review ? ' class="editing"' : '') + '>' + G.pages[page].map(block).join('') + '<p class="ver">' + G.version + ' / build 10</p></main>';
   document.title = review ? G.shop.ja + ' 確認モード' : tx(G.shop) + ' — ' + tx(G.ui.tabs[page]);
   if (review) setupEdit(root, flatten());
   if (page === 'check' && !review) setupCheck(root);
