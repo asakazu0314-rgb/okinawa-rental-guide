@@ -173,7 +173,7 @@ window.GUIDE = {
 window.GUIDE.pages.check = [
   { id: 'C-00', t: 'h1', en: 'Before you drive: please confirm', ja: '出発前の確認' },
   { id: 'C-01', t: 'lead', en: 'Please read each point in your language and tap "I understand". When you finish, show the last screen to our staff.', ja: '各項目をお客様の言語で読み、「理解しました」を押してください。最後の画面をスタッフに見せてください。' },
-  { id: 'C-02', t: 'booking', en: 'Booking number (optional)', ja: '予約番号（任意）' },
+  { id: 'C-02', t: 'booking', en: 'Your name (so our staff can check)', ja: 'お名前（スタッフが確認するため）' },
   { id: 'C-10', t: 'citem', link: 'return', title: { en: 'Return time', ja: '返却時間' }, en: 'Return the car by the time on your booking. If you will be late, contact us before that time. A late return fee may apply.', ja: '予約の返却時間までに返却します。遅れるときは、その前に店へ連絡します。延長料金がかかることがあります。' },
   { id: 'C-20', t: 'citem', link: 'return', title: { en: 'Full tank', ja: '満タン返し' }, en: 'Return the car with a full tank, filled near our shop. Show the fuel receipt. Otherwise, we charge a fuel fee.', ja: '店の近くで満タンにして返却し、給油のレシートを見せます。そうでない場合は燃料代がかかります。' },
   { id: 'C-30', t: 'citem', link: 'return', title: { en: 'Car check and photos', ja: '車の確認と写真' }, en: 'Take 4 photos of the car now (front, back, left, right). At return, our staff will check the car with you.', ja: '今、車を4方向（前・後ろ・左・右）から撮影します。返却時にスタッフと一緒に車を確認します。' },
@@ -189,10 +189,10 @@ window.GUIDE_LTEXT = {
         draft: 'This translation was made with AI and has not been checked by a native speaker yet.',
         understand: 'I understand', understood: 'Understood ✓', more: 'Read more', remain: 'Items left to confirm: ',
         doneTitle: 'Confirmed', doneLead: 'Please show this screen to our staff.', share: 'Send to the shop (LINE, etc.)', copied: 'Copied. Please paste it into your message to the shop.',
-        time: 'Time', language: 'Language', booking: 'Booking number', again: 'Start over' },
+        time: 'Time', language: 'Language', booking: 'Name', again: 'Start over' },
   ja: { front: '① 前', back: '② 後ろ', left: '③ 左', right: '④ 右', photos4: '車を4方向から撮影', maps: 'Googleマップで開く',
         draft: 'この翻訳はAIで作成したもので、ネイティブの確認はまだです。',
         understand: '理解しました', understood: '理解しました ✓', more: 'くわしく読む', remain: '残りの確認：',
         doneTitle: '確認完了', doneLead: 'この画面をスタッフに見せてください。', share: '店に送る（LINEなど）', copied: 'コピーしました。店へのメッセージに貼り付けてください。',
-        time: '日時', language: '言語', booking: '予約番号', again: '最初からやり直す' },
+        time: '日時', language: '言語', booking: 'お名前', again: '最初からやり直す' },
 };

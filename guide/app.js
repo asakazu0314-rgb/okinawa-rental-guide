@@ -173,7 +173,7 @@
       case 'footer': return '<p class="disclaimer"' + a + '>' + icon('doc', 'small') + '<span>' + fmt(tx(b)) + '</span></p>';
       case 'footnote': return '<p class="footnote"' + a + '>' + fmt(tx(b)) + '</p>';
       case 'booking':
-        return '<label class="booking"' + a + '>' + esc(tx(b)) + '<input id="bookingno" type="text" autocomplete="off"></label>';
+        return '<label class="booking"' + a + '>' + esc(tx(b)) + '<input id="custname" type="text" maxlength="40" autocomplete="name"></label>';
       case 'citem':
         return '<div class="citem"' + a + ' data-cid="' + b.id + '"><h3>' + esc(tx(b.title)) + '</h3><p>' + fmt(tx(b)) + '</p>' +
           '<div class="crow"><a class="more" href="' + href(b.link, lang) + '" target="_blank">' + esc(lt('more')) + '</a>' +
@@ -342,7 +342,17 @@
   // チェックの結果はサーバーに保存しない。完了画面をスタッフに見せるか、お客さん自身が店に送る
   function setupCheck(root) {
     var items = G.pages.check.filter(function (b) { return b.t === 'citem'; });
-    var done = {};
+    // チェックとお名前は、このタブを開いている間だけ保存（「くわしく読む」から戻っても消えない。タブを閉じると消える）
+    function sget() { try { return JSON.parse(sessionStorage.getItem('guide-check') || '{}') || {}; } catch (e) { return {}; } }
+    function sset(v) { try { sessionStorage.setItem('guide-check', JSON.stringify(v)); } catch (e) {} }
+    var saved = sget();
+    var done = saved.done || {};
+    var nameInput = document.getElementById('custname');
+    if (nameInput && saved.name) nameInput.value = saved.name;
+    if (nameInput) nameInput.addEventListener('input', function () {
+      saved.name = nameInput.value.slice(0, 40); sset(saved);
+      if (!items.filter(function (b) { return !done[b.id]; }).length) refresh(true);
+    });
     var langLabel = (LANGS.filter(function (l) { return l.code === lang; })[0] || {}).label || lang;
     var main = root.querySelector('main');
     var remain = document.createElement('p');
@@ -360,11 +370,12 @@
     function shareText(when, bk) {
       // 店のスタッフが読めるよう日本語で作る
       return '【' + G.shop.ja + '】出発前の確認：完了\n' +
-        (bk ? '予約番号：' + bk + '\n' : '') + '言語：' + langLabel + '\n日時：' + when + '\n' +
+        (bk ? 'お名前：' + bk + '\n' : '') + '言語：' + langLabel + '\n日時：' + when + '\n' +
         items.map(function (b) { return '✓ ' + b.title.ja; }).join('\n') +
         '\n（お客様が母国語で読み、理解したと確認したもの。署名・同意の代わりではありません）';
     }
-    function refresh() {
+    function refresh(quiet) {
+      saved.done = done; sset(saved);
       var left = items.filter(function (b) { return !done[b.id]; }).length;
       root.querySelectorAll('.citem').forEach(function (el) {
         var ok = !!done[el.dataset.cid];
@@ -374,7 +385,7 @@
       remain.textContent = left ? lt('remain') + left : '';
       if (left) { box.hidden = true; return; }
       var when = stamp();
-      var bk = ((document.getElementById('bookingno') || {}).value || '').trim().slice(0, 30);
+      var bk = ((nameInput || {}).value || '').trim().slice(0, 40);
       box.innerHTML = '<div class="cbadge">✓</div><h2>' + esc(lt('doneTitle')) + '</h2><p>' + esc(lt('doneLead')) + '</p>' +
         '<ul>' + items.map(function (b) {
           return '<li>✓ ' + esc(tx(b.title)) + (lang !== 'ja' ? ' <span class="jp">（' + esc(b.title.ja) + '）</span>' : '') + '</li>';
@@ -384,7 +395,7 @@
         '<button type="button" class="btn" id="cshare">' + esc(lt('share')) + '</button><p class="note" id="cmsg"></p>' +
         '<button type="button" class="btn secondary" id="cagain">' + esc(lt('again')) + '</button>';
       box.hidden = false;
-      box.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      if (!quiet) box.scrollIntoView({ behavior: 'smooth', block: 'start' });
       document.getElementById('cshare').onclick = function () {
         var text = shareText(when, bk);
         if (navigator.share) { navigator.share({ text: text }).catch(function () {}); return; }
@@ -392,7 +403,7 @@
         if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(ok, ok);
         else ok();
       };
-      document.getElementById('cagain').onclick = function () { done = {}; refresh(); window.scrollTo(0, 0); };
+      document.getElementById('cagain').onclick = function () { done = {}; saved = {}; if (nameInput) nameInput.value = ''; refresh(true); window.scrollTo(0, 0); };
     }
     root.addEventListener('click', function (e) {
       var b = e.target.closest('.ubtn');
@@ -401,7 +412,7 @@
       done[id] = !done[id];
       refresh();
     });
-    refresh();
+    refresh(true);
   }
 
   // ---- 表示 ----
@@ -422,7 +433,7 @@
   var draft = (G.draftLangs || []).indexOf(lang) >= 0 && !review;
   root.innerHTML = head + (draft ? '<div class="draftnote">' + esc(lt('draft')) + '</div>' : '') +
     (n && !review ? '<div class="unfilled">' + esc(tx(G.ui.unfilled)) + ' (' + n + ')</div>' : '') +
-    '<main' + (review ? ' class="editing"' : '') + '>' + G.pages[page].map(block).join('') + '<p class="ver">' + G.version + ' / build 8</p></main>';
+    '<main' + (review ? ' class="editing"' : '') + '>' + G.pages[page].map(block).join('') + '<p class="ver">' + G.version + ' / build 9</p></main>';
   document.title = review ? G.shop.ja + ' 確認モード' : tx(G.shop) + ' — ' + tx(G.ui.tabs[page]);
   if (review) setupEdit(root, flatten());
   if (page === 'check' && !review) setupCheck(root);

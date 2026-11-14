@@ -109,7 +109,7 @@ window.GUIDE_LTEXT['zh-Hans'] = { front: '① 前', back: '② 后', left: '③ 
 Object.assign(window.GUIDE_I18N['zh-Hans'], {
   'tab.check': '确认 ✓',
   'C-00': '出发前：请确认', 'C-01': '请用您的语言阅读每一项，并点击“我已了解”。完成后，请将最后的画面出示给工作人员。',
-  'C-02': '预约编号（可不填）',
+  'C-02': '您的姓名（供工作人员确认）',
   'C-10t': '还车时间', 'C-10': '请在预约的还车时间前还车。如果会迟到，请在那之前联系我们。可能会收取超时费用。',
   'C-20t': '加满油', 'C-20': '请在本店附近加满油再还车，并出示加油小票。否则会收取油费。',
   'C-30t': '车辆检查与拍照', 'C-30': '请现在从 4 个方向（前、后、左、右）拍摄车辆照片。还车时，工作人员会和您一起检查车辆。',
@@ -121,5 +121,5 @@ Object.assign(window.GUIDE_I18N['zh-Hans'], {
 Object.assign(window.GUIDE_LTEXT['zh-Hans'], {
   understand: '我已了解', understood: '已了解 ✓', more: '详细说明', remain: '尚未确认的项目：',
   doneTitle: '确认完成', doneLead: '请将此画面出示给工作人员。', share: '发送给店家（LINE 等）', copied: '已复制。请粘贴到发给店家的消息中。',
-  time: '时间', language: '语言', booking: '预约编号', again: '重新开始',
+  time: '时间', language: '语言', booking: '姓名', again: '重新开始',
 });
