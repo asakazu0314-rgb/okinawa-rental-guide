@@ -22,11 +22,11 @@
         if (k === 'tabs') Object.keys(G.ui.tabs).forEach(function (n) { put(G.ui.tabs[n], 'tab.' + n); });
         else put(G.ui[k], 'ui.' + k);
       });
-      ['return', 'insurance', 'check'].forEach(function (pg) {
+      ['return', 'insurance', 'car', 'check'].forEach(function (pg) {
         (G.pages[pg] || []).forEach(function (b) {
           put(b, b.id);
           if (b.title) put(b.title, b.id + 't');
-          (b.items || []).forEach(function (it, i) { put(it, b.id + '-' + (i + 1)); });
+          (b.items || []).forEach(function (it, i) { put(it, b.id + '-' + (i + 1)); if (it.title) put(it.title, b.id + '-' + (i + 1) + 't'); });
           (b.lines || []).forEach(function (l) { put(l, l.id); });
           (b.buttons || []).forEach(function (bt, i) { put(bt, b.id + '-btn' + (i + 1)); });
           if (b.head && t[b.id + '-head']) b.head[code] = t[b.id + '-head'];
@@ -55,12 +55,12 @@
   var lang = params.get('lang') || d.lang || store('guide-lang') || fromBrowser() || 'en';
   if (CODES.indexOf(lang) < 0) lang = 'en';
   var page = params.get('page') || d.page;
-  if (page !== 'insurance' && page !== 'check') page = 'return';
+  if (['insurance', 'car', 'check'].indexOf(page) < 0) page = 'return';
   var review = params.get('review') === '1' || d.review === '1';
 
   // ページとリンクの対応（?を使わないファイル名にする。リンクを共有したときにクエリが消えても困らないように）
   function href(pg, lg) {
-    var f = (pg === 'insurance' ? 'insurance' : pg === 'check' ? 'check' : 'index') + (lg === 'ja' ? '-ja' : '') + '.html';
+    var f = (['insurance', 'car', 'check'].indexOf(pg) >= 0 ? pg : 'index') + (lg === 'ja' ? '-ja' : '') + '.html';
     return (lg === 'ja' || lg === 'en') ? f : f + '?lang=' + lg;
   }
 
@@ -128,6 +128,65 @@
       '<span class="lbl l">' + L[2] + '</span><span class="lbl r">' + L[3] + '</span></div>';
   }
 
+  // ---- 車の操作：図の番号をタップすると説明が出る ----
+  // 見本のイラスト（右ハンドル車の運転席。特定の車種ではない）。店の写真があれば photo を使う
+  function dashArt() {
+    return '<svg viewBox="0 0 400 260" aria-hidden="true" class="dash">' +
+      '<defs><linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#BFDCEB"/><stop offset="1" stop-color="#E8F3F7"/></linearGradient>' +
+      '<linearGradient id="dsh" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4A5560"/><stop offset="1" stop-color="#2B333B"/></linearGradient>' +
+      '<radialGradient id="whl" cx=".5" cy=".4" r=".6"><stop offset="0" stop-color="#3C4650"/><stop offset="1" stop-color="#1C2228"/></radialGradient></defs>' +
+      '<rect width="400" height="260" fill="#20262C"/>' +
+      '<path d="M18 0h364l-28 82H46z" fill="url(#sky)"/>' +
+      '<path d="M40 70h220l6 40H52z" fill="#7FA36B" opacity=".35"/>' +
+      '<path d="M0 84q200-22 400 0v176H0z" fill="url(#dsh)"/>' +
+      '<rect x="96" y="96" width="88" height="44" rx="6" fill="#11171C" stroke="#5E6A75"/>' +
+      '<rect x="102" y="102" width="76" height="32" rx="3" fill="#2D4C5C"/>' +
+      '<path d="M140 156l-9 15h18z" fill="#D2463E" stroke="#fff" stroke-width="1.5"/>' +
+      '<rect x="126" y="150" width="28" height="26" rx="5" fill="none" stroke="#6C7884"/>' +
+      '<rect x="112" y="186" width="76" height="70" rx="10" fill="#262D34" stroke="#4D5761"/>' +
+      '<rect x="146" y="194" width="8" height="20" rx="3" fill="#8D99A4"/><circle cx="150" cy="198" r="9" fill="#C7CFD6"/>' +
+      '<text x="168" y="214" font-size="11" fill="#C7CFD6" font-family="sans-serif">P R N D</text>' +
+      '<rect x="102" y="226" width="18" height="12" rx="3" fill="#47525D" stroke="#7A8691"/>' +
+      '<rect x="250" y="98" width="64" height="34" rx="14" fill="#11171C" stroke="#5E6A75"/>' +
+      '<circle cx="268" cy="115" r="10" fill="none" stroke="#9FB4C2" stroke-width="2"/><circle cx="296" cy="115" r="10" fill="none" stroke="#9FB4C2" stroke-width="2"/>' +
+      '<path d="M218 154l-24-14" stroke="#7A8691" stroke-width="7" stroke-linecap="round"/>' +
+      '<path d="M342 154l26 -6" stroke="#7A8691" stroke-width="7" stroke-linecap="round"/><circle cx="378" cy="146" r="7" fill="#9AA6B1"/>' +
+      '<circle cx="280" cy="170" r="64" fill="none" stroke="url(#whl)" stroke-width="14"/>' +
+      '<circle cx="280" cy="170" r="22" fill="#2E363E" stroke="#4E5964"/>' +
+      '<path d="M258 170h-50M302 170h50M280 192v42" stroke="#2B333B" stroke-width="12"/>' +
+      '<circle cx="350" cy="200" r="11" fill="#1A2026" stroke="#C7CFD6" stroke-width="2"/>' +
+      '<text x="350" y="203" font-size="6" fill="#C7CFD6" text-anchor="middle" font-family="sans-serif">POWER</text>' +
+      '<rect x="236" y="234" width="30" height="10" rx="2" fill="#11171C" stroke="#6C7884"/>' +
+      '<rect x="366" y="230" width="14" height="18" rx="3" fill="#47525D" stroke="#7A8691"/>' +
+      '</svg>';
+  }
+  function hotspots(b) {
+    var img = b.photo ? '<img src="' + esc(b.photo) + '" alt="">' : dashArt() + '<span class="hsbadge">' + esc(lt('sample')) + '</span>';
+    return '<div class="hs"' + ' id="' + b.id + '"><div class="hspic">' + img + b.items.map(function (it, i) {
+      return '<button type="button" class="hsdot" data-i="' + i + '" style="left:' + it.x + '%;top:' + it.y + '%" aria-label="' + (i + 1) + ' ' + esc(tx(it.title)) + '">' + (i + 1) + '</button>';
+    }).join('') + '</div>' +
+      '<div class="hsdetail" aria-live="polite"><p class="hshint">👆 ' + esc(lt('tapnum')) + '</p></div>' +
+      '<ol class="hslist">' + b.items.map(function (it, i) {
+        return '<li><button type="button" class="hsrow" data-i="' + i + '" id="' + b.id + '-' + (i + 1) + '"><span class="num">' + (i + 1) + '</span><span>' + esc(tx(it.title)) + '</span></button></li>';
+      }).join('') + '</ol></div>';
+  }
+  function setupHotspots(root) {
+    root.querySelectorAll('.hs').forEach(function (wrap) {
+      var b = G.pages[page].filter(function (x) { return x.id === wrap.id; })[0];
+      var detail = wrap.querySelector('.hsdetail');
+      function show(i, fromList) {
+        var it = b.items[i];
+        wrap.querySelectorAll('.hsdot, .hsrow').forEach(function (el) { el.classList.toggle('on', +el.dataset.i === i); });
+        detail.innerHTML = '<h3><span class="num">' + (i + 1) + '</span>' + esc(tx(it.title)) + '</h3><p>' + fmt(tx(it)) + '</p>';
+        if (fromList) wrap.querySelector('.hspic').scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+      wrap.addEventListener('click', function (e) {
+        var el = e.target.closest('.hsdot, .hsrow');
+        if (el) show(+el.dataset.i, el.classList.contains('hsrow'));
+      });
+    });
+  }
+
   // ---- 1ブロックずつ描く ----
   function block(b) {
     var a = ' id="' + b.id + '"';
@@ -178,6 +237,7 @@
         return '<div class="citem"' + a + ' data-cid="' + b.id + '"><h3>' + esc(tx(b.title)) + '</h3><p>' + fmt(tx(b)) + '</p>' +
           '<div class="crow"><a class="more" href="' + href(b.link, lang) + '">' + esc(lt('more')) + '</a>' +
           '<button type="button" class="ubtn">' + esc(lt('understand')) + '</button></div></div>';
+      case 'hotspots': return hotspots(b);
       case 'nav': return '<a class="btn nav"' + a + ' href="' + href(b.to, lang) + '">' + esc(tx(b)) + '</a>';
     }
     return '';
@@ -193,7 +253,7 @@
       return '<a class="tab' + (page === name ? ' on' : '') + '" href="' + href(name, lang) + '">' + esc(tx(G.ui.tabs[name])) + '</a>';
     }
     return '<header><span class="shop">' + esc(tx(G.shop)) + '</span>' + langMenu() + '</header>' +
-      '<nav class="tabs">' + tab('return') + tab('insurance') + tab('check') + '</nav>';
+      '<nav class="tabs">' + tab('return') + tab('insurance') + tab('car') + tab('check') + '</nav>';
   }
 
   // ---- 確認シート（店長向け・日本語） ----
@@ -433,10 +493,11 @@
   var draft = (G.draftLangs || []).indexOf(lang) >= 0 && !review;
   root.innerHTML = head + (draft ? '<div class="draftnote">' + esc(lt('draft')) + '</div>' : '') +
     (n && !review ? '<div class="unfilled">' + esc(tx(G.ui.unfilled)) + ' (' + n + ')</div>' : '') +
-    '<main' + (review ? ' class="editing"' : '') + '>' + G.pages[page].map(block).join('') + '<p class="ver">' + G.version + ' / build 10</p></main>';
+    '<main' + (review ? ' class="editing"' : '') + '>' + G.pages[page].map(block).join('') + '<p class="ver">' + G.version + ' / build 11</p></main>';
   document.title = review ? G.shop.ja + ' 確認モード' : tx(G.shop) + ' — ' + tx(G.ui.tabs[page]);
   if (review) setupEdit(root, flatten());
   if (page === 'check' && !review) setupCheck(root);
+  setupHotspots(root);
   var sel = document.getElementById('langsel');
   if (sel) sel.addEventListener('change', function () {
     store('guide-lang', sel.value);

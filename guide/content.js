@@ -20,7 +20,7 @@ window.GUIDE = {
   draftLangs: ['zh-Hant', 'ko', 'th', 'zh-Hans'],
   shop: { en: 'Sample Rent-a-Car', ja: 'サンプルレンタカー' },
   ui: {
-    tabs: { return: { en: 'Return', ja: '返却' }, insurance: { en: 'Insurance', ja: '保険・NOC' }, check: { en: 'Check ✓', ja: '確認 ✓' } },
+    tabs: { return: { en: 'Return', ja: '返却' }, insurance: { en: 'Insurance', ja: '保険・NOC' }, car: { en: 'Controls', ja: '操作' }, check: { en: 'Check ✓', ja: '確認 ✓' } },
     exampleOnly: { en: 'Example only', ja: 'あくまで一例です' },
     unfilled: { en: 'Some shop details are not filled in yet.', ja: '店が記入していない項目があります。' },
     showEnglish: { en: 'Show English', ja: '英語を見る' },
@@ -183,16 +183,38 @@ window.GUIDE.pages.check = [
   { id: 'C-90', t: 'note', en: 'This checks your understanding. It is not a signature or an agreement. The rental agreement (Japanese) takes priority.', ja: 'これは理解の確認です。署名や同意の代わりではありません。正式な内容は日本語の貸渡約款が優先されます。' },
 ];
 
+// 車の操作説明ページ（2026-11-14 追加）
+// 図の番号をタップすると説明が出る。いまは見本のイラスト。店が実車の写真に差し替えるときは
+// photo に画像ファイル名を入れ、各番号の x・y（写真の左上からの位置％）を写真に合わせて直す。
+window.GUIDE.pages.car = [
+  { id: 'D-00', t: 'h1', en: 'Car controls', ja: '車の操作' },
+  { id: 'D-01', t: 'lead', en: 'Tap a number on the picture to see what it does.', ja: '図の番号をタップすると、説明が出ます。' },
+  { id: 'D-10', t: 'hotspots', photo: '', items: [
+    { x: 92.5, y: 57.7, title: { en: 'Turn signal', ja: 'ウインカー' }, en: 'The turn signal is the lever on the RIGHT side of the steering wheel.', ja: 'ウインカーは、ハンドルの右側のレバーです。' },
+    { x: 49, y: 52, title: { en: 'Wipers', ja: 'ワイパー' }, en: 'The wipers are the lever on the LEFT side. In many Japanese cars, the turn signal and wipers are on the opposite side from cars in many other countries. If the wipers start when you want to turn, you used the wrong lever.', ja: 'ワイパーは、ハンドルの左側のレバーです。日本の車の多くは、ほかの多くの国の車とウインカーとワイパーが左右逆です。曲がるつもりでワイパーが動いたら、レバーの間違いです。' },
+    { x: 91, y: 41, title: { en: 'Headlights', ja: 'ライト' }, en: 'Turn the end of the right lever to turn on the lights. [Shop sets: AUTO setting of this car]', ja: '右側のレバーの先を回して、ライトを点けます。［店が記入：この車のAUTOの設定］' },
+    { x: 87.5, y: 77, title: { en: 'Start the engine', ja: 'エンジンをかける' }, en: '[Shop sets: how to start this car, e.g. press the brake pedal and push the POWER button]', ja: '［店が記入：この車の始動方法。例：ブレーキを踏みながらPOWERボタンを押す］' },
+    { x: 35, y: 57, title: { en: 'Hazard lights', ja: 'ハザードランプ' }, en: 'The button with a red triangle turns on the hazard lights. Use it when you must stop in an emergency.', ja: '赤い三角のボタンで、ハザードランプが点きます。緊急で止まるときに使います。' },
+    { x: 37.5, y: 79, title: { en: 'Shift lever', ja: 'シフトレバー' }, en: 'P = Park, R = Reverse, N = Neutral, D = Drive. [Shop sets: other positions of this car, e.g. B]', ja: 'P＝駐車、R＝後退、N＝ニュートラル、D＝走行。［店が記入：この車のほかの位置。例：B］' },
+    { x: 27.5, y: 89, title: { en: 'Parking brake', ja: 'パーキングブレーキ' }, en: 'Type: [Shop sets: foot pedal / button / lever]. Release it before you drive.', ja: '種類：［店が記入：足踏み式／ボタン式／レバー式］。走る前に解除します。' },
+    { x: 93, y: 90, title: { en: 'Fuel door', ja: '給油口' }, en: 'Fuel door opener: [Shop sets: place]. On the fuel gauge, the small arrow next to the pump icon shows which side the fuel door is on.', ja: '給油口を開けるレバー：［店が記入：場所］。燃料計の給油マークの横にある小さな矢印が、給油口のある側を示します。' },
+    { x: 62.5, y: 92, title: { en: 'ETC card (expressway toll)', ja: 'ETCカード（高速道路の料金）' }, en: 'ETC card slot: [Shop sets: place]. Insert the card before you enter the expressway.', ja: 'ETCカードの差し込み口：［店が記入：場所］。高速道路に入る前に差し込みます。' },
+  ] },
+  { id: 'D-90', t: 'note', en: 'This is a sample picture. The shop will replace it with a photo of your car. The place of each control can differ by car model.', ja: 'これは見本の図です。店が実際の車の写真に差し替えます。車種によって位置が違うことがあります。' },
+];
+
 // 画面の小さな文言（言語ごと）。翻訳ファイルで言語を足すときは、ここにも同じキーを入れる
 window.GUIDE_LTEXT = {
   en: { front: '① Front', back: '② Back', left: '③ Left', right: '④ Right', photos4: 'Take 4 photos of the car', maps: 'Open in Google Maps',
         draft: 'This translation was made with AI and has not been checked by a native speaker yet.',
         understand: 'I understand', understood: 'Understood ✓', more: 'Read more', remain: 'Items left to confirm: ',
         doneTitle: 'Confirmed', doneLead: 'Please show this screen to our staff.', share: 'Send to the shop (LINE, etc.)', copied: 'Copied. Please paste it into your message to the shop.',
-        time: 'Time', language: 'Language', booking: 'Name', again: 'Start over' },
+        time: 'Time', language: 'Language', booking: 'Name', again: 'Start over',
+        sample: 'Sample picture', tapnum: 'Tap a number' },
   ja: { front: '① 前', back: '② 後ろ', left: '③ 左', right: '④ 右', photos4: '車を4方向から撮影', maps: 'Googleマップで開く',
         draft: 'この翻訳はAIで作成したもので、ネイティブの確認はまだです。',
         understand: '理解しました', understood: '理解しました ✓', more: 'くわしく読む', remain: '残りの確認：',
         doneTitle: '確認完了', doneLead: 'この画面をスタッフに見せてください。', share: '店に送る（LINEなど）', copied: 'コピーしました。店へのメッセージに貼り付けてください。',
-        time: '日時', language: '言語', booking: 'お名前', again: '最初からやり直す' },
+        time: '日時', language: '言語', booking: 'お名前', again: '最初からやり直す',
+        sample: '見本の図', tapnum: '番号をタップしてください' },
 };

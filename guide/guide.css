@@ -182,3 +182,24 @@ mark.ph.filled { background: #DDF2E3; color: #1E5B35; outline: 1.5px solid #2E7D
 .cbadge { width: 64px; height: 64px; margin: 0 auto; border-radius: 50%; background: #2E7D4F; color: #fff; font-size: 36px; display: grid; place-items: center; }
 .cdone .meta { font-size: 15px; color: var(--sub); }
 .staffnote { font-size: 14px; background: #fff; border-radius: 8px; padding: 8px 10px; text-align: left; }
+
+/* 車の操作（図の番号をタップ） */
+.tab { font-size: 15px; }
+.hs { margin: 8px 0 16px; }
+.hspic { position: relative; border-radius: 12px; overflow: hidden; background: #20262C; scroll-margin-top: 110px; }
+.hspic svg, .hspic img { display: block; width: 100%; height: auto; }
+.hsbadge { position: absolute; left: 8px; top: 8px; background: rgba(255,255,255,.9); color: var(--text); font-size: 12px; font-weight: 700; padding: 2px 8px; border-radius: 6px; }
+.hsdot { position: absolute; transform: translate(-50%, -50%); width: 30px; height: 30px; border-radius: 50%;
+  border: 2px solid #fff; background: var(--main); color: #fff; font-weight: 700; font-size: 15px; padding: 0;
+  box-shadow: 0 0 0 4px rgba(255,255,255,.25), 0 2px 6px rgba(0,0,0,.4); cursor: pointer; }
+.hsdot.on { background: #E07B2A; transform: translate(-50%, -50%) scale(1.2); z-index: 2; }
+.hsdetail { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; margin-top: 10px; min-height: 76px; }
+.hsdetail h3 { margin: 0 0 6px; font-size: 18px; display: flex; align-items: center; gap: 8px; }
+.hsdetail p { margin: 0; }
+.hshint { color: var(--sub); }
+.hs .num { display: inline-grid; place-items: center; min-width: 26px; height: 26px; border-radius: 50%; background: var(--main); color: #fff; font-size: 14px; font-weight: 700; }
+.hslist { list-style: none; padding: 0; margin: 10px 0 0; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.hsrow { width: 100%; display: flex; align-items: center; gap: 8px; text-align: left; background: var(--card); border: 1px solid var(--line);
+  border-radius: 10px; padding: 10px; font: inherit; font-size: 15px; color: var(--text); cursor: pointer; min-height: 48px; }
+.hsrow.on { border-color: #E07B2A; box-shadow: 0 0 0 2px #E07B2A inset; }
+.hsrow.on .num, .hsdetail .num { background: #E07B2A; }
