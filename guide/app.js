@@ -15,10 +15,17 @@
     } catch (e) { return null; }
   }
 
-  var lang = params.get('lang') || store('guide-lang') || 'en';
+  // ページごとのHTMLファイル（body の data-*）で表示内容を決める。URLの ?lang= などがあればそちらを優先
+  var d = document.body.dataset;
+  var lang = params.get('lang') || d.lang || store('guide-lang') || 'en';
   if (lang !== 'ja') lang = 'en';
-  var page = params.get('page') === 'insurance' ? 'insurance' : 'return';
-  var review = params.get('review') === '1';
+  var page = (params.get('page') || d.page) === 'insurance' ? 'insurance' : 'return';
+  var review = params.get('review') === '1' || d.review === '1';
+
+  // ページとリンクの対応（?を使わないファイル名にする。リンクを共有したときにクエリが消えても困らないように）
+  function href(pg, lg) {
+    return (pg === 'insurance' ? 'insurance' : 'index') + (lg === 'ja' ? '-ja' : '') + '.html';
+  }
 
   // ---- アイコン（線画） ----
   var ICONS = {
@@ -85,7 +92,7 @@
       case 'h2': return '<h2' + a + '>' + icon(b.icon) + '<span>' + fmt(tx(b)) + '</span></h2>';
       case 'li':
         var t = fmt(tx(b));
-        if (b.link) t = '<a href="?page=' + b.link + '&lang=' + lang + '">' + t + '</a>';
+        if (b.link) t = '<a href="' + href(b.link, lang) + '">' + t + '</a>';
         return '<p class="li' + (b.important ? ' money' : '') + '"' + a + '>' + t + '</p>';
       case 'xli': return '<p class="li xli"' + a + '>' + icon('x', 'small') + '<span>' + fmt(tx(b)) + '</span></p>';
       case 'note': return '<p class="note"' + a + '>' + fmt(tx(b)) + '</p>';
@@ -116,18 +123,17 @@
           }).join('') + '</div></div>';
       case 'footer': return '<p class="disclaimer"' + a + '>' + icon('doc', 'small') + '<span>' + fmt(tx(b)) + '</span></p>';
       case 'footnote': return '<p class="footnote"' + a + '>' + fmt(tx(b)) + '</p>';
-      case 'nav': return '<a class="btn nav"' + a + ' href="?page=' + b.to + '&lang=' + lang + '">' + esc(tx(b)) + '</a>';
+      case 'nav': return '<a class="btn nav"' + a + ' href="' + href(b.to, lang) + '">' + esc(tx(b)) + '</a>';
     }
     return '';
   }
 
   function header() {
     function langBtn(code, label) {
-      var q = new URLSearchParams(location.search); q.set('lang', code);
-      return '<a class="lang' + (lang === code ? ' on' : '') + '" href="?' + q.toString() + '">' + label + '</a>';
+      return '<a class="lang' + (lang === code ? ' on' : '') + '" href="' + href(page, code) + '">' + label + '</a>';
     }
     function tab(name) {
-      return '<a class="tab' + (page === name ? ' on' : '') + '" href="?page=' + name + '&lang=' + lang + '">' + esc(tx(G.ui.tabs[name])) + '</a>';
+      return '<a class="tab' + (page === name ? ' on' : '') + '" href="' + href(name, lang) + '">' + esc(tx(G.ui.tabs[name])) + '</a>';
     }
     return '<header><span class="shop">' + esc(tx(G.shop)) + '</span><span class="langs">' + langBtn('en', 'EN') + langBtn('ja', '日本語') + '</span></header>' +
       '<nav class="tabs">' + tab('return') + tab('insurance') + '</nav>';
