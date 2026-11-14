@@ -6,7 +6,34 @@
 (function () {
   var G = window.GUIDE;
   var params = new URLSearchParams(location.search);
-  var PH = /(\[Shop sets[^\]]*\]|［店が記入[^］]*］)/g;
+  // 差し替え欄：[ … ]（英語・中国語・韓国語など）と ［店が記入：…］（日本語）
+  var PH = /(\[[^\]]*\]|［店が記入[^］]*］)/g;
+
+  // 対応言語（順番＝言語メニューの並び）。翻訳ファイル i18n/*.js があれば取り込む
+  var LANGS = (G.langs || [{ code: 'en', label: 'English' }, { code: 'ja', label: '日本語' }]);
+  var CODES = LANGS.map(function (l) { return l.code; });
+  (function mergeI18n() {
+    var T = window.GUIDE_I18N || {};
+    Object.keys(T).forEach(function (code) {
+      var t = T[code];
+      function put(o, key) { if (o && t[key] !== undefined) o[code] = t[key]; }
+      put(G.shop, 'shop');
+      Object.keys(G.ui).forEach(function (k) {
+        if (k === 'tabs') Object.keys(G.ui.tabs).forEach(function (n) { put(G.ui.tabs[n], 'tab.' + n); });
+        else put(G.ui[k], 'ui.' + k);
+      });
+      ['return', 'insurance'].forEach(function (pg) {
+        G.pages[pg].forEach(function (b) {
+          put(b, b.id);
+          (b.items || []).forEach(function (it, i) { put(it, b.id + '-' + (i + 1)); });
+          (b.lines || []).forEach(function (l) { put(l, l.id); });
+          (b.buttons || []).forEach(function (bt, i) { put(bt, b.id + '-btn' + (i + 1)); });
+          if (b.head && t[b.id + '-head']) b.head[code] = t[b.id + '-head'];
+          (b.rows || []).forEach(function (r, i) { if (t[b.id + '-' + (i + 1)]) r[code] = t[b.id + '-' + (i + 1)]; });
+        });
+      });
+    });
+  })();
 
   function store(key, value) {
     try {
@@ -17,14 +44,22 @@
 
   // ページごとのHTMLファイル（body の data-*）で表示内容を決める。URLの ?lang= などがあればそちらを優先
   var d = document.body.dataset;
-  var lang = params.get('lang') || d.lang || store('guide-lang') || 'en';
-  if (lang !== 'ja') lang = 'en';
+  // 言語の決め方：URLの ?lang= → このページのファイルで指定 → 前に選んだ言語 → スマホの言語設定 → 英語
+  function fromBrowser() {
+    var n = (navigator.language || '').toLowerCase();
+    if (n.indexOf('zh') === 0) return /tw|hk|mo|hant/.test(n) ? 'zh-Hant' : 'zh-Hans';
+    var short = n.split('-')[0];
+    return CODES.indexOf(short) >= 0 ? short : null;
+  }
+  var lang = params.get('lang') || d.lang || store('guide-lang') || fromBrowser() || 'en';
+  if (CODES.indexOf(lang) < 0) lang = 'en';
   var page = (params.get('page') || d.page) === 'insurance' ? 'insurance' : 'return';
   var review = params.get('review') === '1' || d.review === '1';
 
   // ページとリンクの対応（?を使わないファイル名にする。リンクを共有したときにクエリが消えても困らないように）
   function href(pg, lg) {
-    return (pg === 'insurance' ? 'insurance' : 'index') + (lg === 'ja' ? '-ja' : '') + '.html';
+    var f = (pg === 'insurance' ? 'insurance' : 'index') + (lg === 'ja' ? '-ja' : '') + '.html';
+    return (lg === 'ja' || lg === 'en') ? f : f + '?lang=' + lg;
   }
 
   // ---- アイコン（線画） ----
@@ -59,20 +94,26 @@
       return v ? '<mark class="ph filled">' + esc(v) + '</mark>' : '<mark class="ph">' + m + '</mark>';
     });
   }
-  function tx(o) { return o[lang]; }
+  function tx(o) { return o[lang] !== undefined ? o[lang] : o.en; }
+  var LTEXT = window.GUIDE_LTEXT || {};
+  function lt(key) { var t = LTEXT[lang] || {}; return (t[key] !== undefined ? t[key] : (LTEXT.en || {})[key]) || key; }
 
   function countPlaceholders() {
     // 今の言語・今のページの差し替え欄だけを数える
     var n = 0;
-    var re = lang === 'ja' ? /［店が記入[^］]*］/g : /\[Shop sets[^\]]*\]/g;
-    JSON.stringify(G.pages[page]).replace(re, function () { n++; });
+    G.pages[page].forEach(function (b) {
+      var parts = [tx(b) || ''];
+      (b.items || []).concat(b.lines || []).forEach(function (x) { parts.push(tx(x) || ''); });
+      (b.rows || []).forEach(function (r) { parts.push((r[lang] || r.en).join(' ')); });
+      parts.join(' ').replace(PH, function () { n++; });
+    });
     return n;
   }
 
   // ---- 4方向の写真の図 ----
   function carPhotos() {
-    var L = lang === 'ja' ? ['① 前', '② 後ろ', '③ 左', '④ 右'] : ['① Front', '② Back', '③ Left', '④ Right'];
-    return '<div class="carphotos" aria-label="' + (lang === 'ja' ? '車を4方向から撮影' : 'Take 4 photos of the car') + '">' +
+    var L = [lt('front'), lt('back'), lt('left'), lt('right')];
+    return '<div class="carphotos" aria-label="' + esc(lt('photos4')) + '">' +
       '<svg viewBox="0 0 300 220" aria-hidden="true">' +
       '<rect x="110" y="55" width="80" height="110" rx="22" class="car"/>' +
       '<path d="M122 80h56M122 140h56" class="car-line"/>' +
@@ -111,12 +152,12 @@
       case 'station':
         var p = tx(b).split('|');
         return '<div class="card station"' + a + '><strong>' + fmt(p[0]) + '</strong><p>' + fmt(p[1]) + '</p><p>' + fmt(p[2]) + '</p><p>' + fmt(p[3]) + '</p>' +
-          '<a class="btn secondary" href="#">' + icon('pin', 'inbtn') + '<span>' + (lang === 'ja' ? 'Googleマップで開く' : 'Open in Google Maps') + '</span></a></div>';
+          '<a class="btn secondary" href="#">' + icon('pin', 'inbtn') + '<span>' + esc(lt('maps')) + '</span></a></div>';
       case 'carphotos': return carPhotos();
       case 'table':
-        return '<table class="tbl' + (b.important ? ' money' : '') + '"' + a + '><thead><tr>' + b.head[lang].map(function (h) { return '<th>' + esc(h) + '</th>'; }).join('') +
+        return '<table class="tbl' + (b.important ? ' money' : '') + '"' + a + '><thead><tr>' + (b.head[lang] || b.head.en).map(function (h) { return '<th>' + esc(h) + '</th>'; }).join('') +
           '</tr></thead><tbody>' + b.rows.map(function (r, i) {
-            return '<tr id="' + b.id + '-' + (i + 1) + '">' + r[lang].map(function (c) { return '<td>' + fmt(c) + '</td>'; }).join('') + '</tr>';
+            return '<tr id="' + b.id + '-' + (i + 1) + '">' + (r[lang] || r.en).map(function (c) { return '<td>' + fmt(c) + '</td>'; }).join('') + '</tr>';
           }).join('') + '</tbody></table>';
       case 'example':
         return '<div class="example"' + a + '><span class="badge">' + esc(tx(G.ui.exampleOnly)) + '</span><h3>' + fmt(tx(b)) + '</h3>' +
@@ -135,13 +176,15 @@
   }
 
   function header() {
-    function langBtn(code, label) {
-      return '<a class="lang' + (lang === code ? ' on' : '') + '" href="' + href(page, code) + '">' + label + '</a>';
+    function langMenu() {
+      return '<label class="langsel"><span class="globe" aria-hidden="true">🌐</span><select id="langsel" aria-label="Language">' +
+        LANGS.map(function (l) { return '<option value="' + l.code + '"' + (l.code === lang ? ' selected' : '') + '>' + l.label + '</option>'; }).join('') +
+        '</select></label>';
     }
     function tab(name) {
       return '<a class="tab' + (page === name ? ' on' : '') + '" href="' + href(name, lang) + '">' + esc(tx(G.ui.tabs[name])) + '</a>';
     }
-    return '<header><span class="shop">' + esc(tx(G.shop)) + '</span><span class="langs">' + langBtn('en', 'EN') + langBtn('ja', '日本語') + '</span></header>' +
+    return '<header><span class="shop">' + esc(tx(G.shop)) + '</span>' + langMenu() + '</header>' +
       '<nav class="tabs">' + tab('return') + tab('insurance') + '</nav>';
   }
 
@@ -302,9 +345,15 @@
       '<a class="tab' + (page === 'insurance' ? ' on' : '') + '" href="review-insurance.html">保険・NOC</a></nav>' +
       '<div class="ehelp">お客様と同じ画面です。<b>文をタップ</b>すると、確認・修正・黄色い欄への記入ができます。<b>枠が茶色の文（お金・事故）</b>は必ず確認してください。最後に下の「結果をコピー」を押して、LINEで送ってください。</div>';
   }
-  root.innerHTML = head +
+  var draft = (G.draftLangs || []).indexOf(lang) >= 0 && !review;
+  root.innerHTML = head + (draft ? '<div class="draftnote">' + esc(lt('draft')) + '</div>' : '') +
     (n && !review ? '<div class="unfilled">' + esc(tx(G.ui.unfilled)) + ' (' + n + ')</div>' : '') +
-    '<main' + (review ? ' class="editing"' : '') + '>' + G.pages[page].map(block).join('') + '<p class="ver">' + G.version + ' / build 4</p></main>';
+    '<main' + (review ? ' class="editing"' : '') + '>' + G.pages[page].map(block).join('') + '<p class="ver">' + G.version + ' / build 5</p></main>';
   document.title = review ? G.shop.ja + ' 確認モード' : tx(G.shop) + ' — ' + tx(G.ui.tabs[page]);
   if (review) setupEdit(root, flatten());
+  var sel = document.getElementById('langsel');
+  if (sel) sel.addEventListener('change', function () {
+    store('guide-lang', sel.value);
+    location.href = href(page, sel.value);
+  });
 })();

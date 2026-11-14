@@ -152,3 +152,11 @@ window.GUIDE = {
     ],
   },
 };
+
+// 画面の小さな文言（言語ごと）。翻訳ファイルで言語を足すときは、ここにも同じキーを入れる
+window.GUIDE_LTEXT = {
+  en: { front: '① Front', back: '② Back', left: '③ Left', right: '④ Right', photos4: 'Take 4 photos of the car', maps: 'Open in Google Maps',
+        draft: 'This translation was made with AI and has not been checked by a native speaker yet.' },
+  ja: { front: '① 前', back: '② 後ろ', left: '③ 左', right: '④ 右', photos4: '車を4方向から撮影', maps: 'Googleマップで開く',
+        draft: 'この翻訳はAIで作成したもので、ネイティブの確認はまだです。' },
+};

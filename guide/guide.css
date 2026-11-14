@@ -154,3 +154,10 @@ mark.ph.filled { background: #DDF2E3; color: #1E5B35; outline: 1.5px solid #2E7D
 .phin { display: block; margin-top: 10px; font-size: 14px; color: var(--sub); }
 .phin input { display: block; width: 100%; margin-top: 4px; min-height: 44px; font-size: 16px; padding: 8px 10px; border: 1.5px solid var(--ph-line); border-radius: 8px; background: #FFFDF0; }
 .sheet textarea { width: 100%; margin-top: 8px; min-height: 64px; font-size: 16px; padding: 8px; border-radius: 8px; border: 1px solid var(--line); }
+
+/* 言語メニュー */
+.langsel { display: flex; align-items: center; gap: 4px; background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.6); border-radius: 8px; padding: 0 6px; }
+.langsel select { min-height: 36px; background: transparent; color: #fff; border: 0; font-size: 15px; font-weight: 600; max-width: 140px; }
+.langsel select option { color: #1F2A33; }
+.globe { font-size: 16px; }
+.draftnote { margin: 12px 16px 0; padding: 8px 12px; border-radius: 8px; background: #FFF4E5; color: var(--money); font-size: 14px; }
