@@ -161,3 +161,24 @@ mark.ph.filled { background: #DDF2E3; color: #1E5B35; outline: 1.5px solid #2E7D
 .langsel select option { color: #1F2A33; }
 .globe { font-size: 16px; }
 .draftnote { margin: 12px 16px 0; padding: 8px 12px; border-radius: 8px; background: #FFF4E5; color: var(--money); font-size: 14px; }
+
+/* 出発前の確認（理解しました） */
+.booking { display: block; margin: 8px 0 16px; font-size: 15px; color: var(--sub); }
+.booking input { display: block; width: 100%; margin-top: 4px; min-height: 44px; font-size: 16px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; }
+.citem { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; margin: 12px 0; }
+.citem h3 { font-size: 18px; margin: 0 0 6px; }
+.citem p { margin: 0; }
+.citem.ok { border-color: #2E7D4F; background: #F1FAF4; }
+.crow { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 12px; }
+.more { font-size: 15px; }
+.ubtn { min-height: 48px; padding: 0 18px; border-radius: 10px; border: 1.5px solid var(--main); background: var(--card); color: var(--main); font-size: 16px; font-weight: 700; }
+.citem.ok .ubtn { background: #2E7D4F; border-color: #2E7D4F; color: #fff; }
+.cremain { font-weight: 700; color: var(--money); margin: 16px 0; }
+.cdone { margin: 24px 0; padding: 20px 16px; border-radius: 16px; background: #F1FAF4; border: 2px solid #2E7D4F; text-align: center; }
+.cdone h2 { justify-content: center; margin: 8px 0; color: #1E5B35; }
+.cdone ul { text-align: left; padding-left: 0; list-style: none; margin: 12px 0; }
+.cdone li { padding: 6px 0; border-bottom: 1px solid #CFE8D6; font-weight: 600; }
+.cdone .jp { font-weight: 400; color: var(--sub); font-size: 14px; }
+.cbadge { width: 64px; height: 64px; margin: 0 auto; border-radius: 50%; background: #2E7D4F; color: #fff; font-size: 36px; display: grid; place-items: center; }
+.cdone .meta { font-size: 15px; color: var(--sub); }
+.staffnote { font-size: 14px; background: #fff; border-radius: 8px; padding: 8px 10px; text-align: left; }

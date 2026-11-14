@@ -20,7 +20,7 @@ window.GUIDE = {
   draftLangs: ['zh-Hant', 'ko', 'th', 'zh-Hans'],
   shop: { en: 'Sample Rent-a-Car', ja: 'サンプルレンタカー' },
   ui: {
-    tabs: { return: { en: 'Return', ja: '返却' }, insurance: { en: 'Insurance', ja: '保険・NOC' } },
+    tabs: { return: { en: 'Return', ja: '返却' }, insurance: { en: 'Insurance', ja: '保険・NOC' }, check: { en: 'Check ✓', ja: '確認 ✓' } },
     exampleOnly: { en: 'Example only', ja: 'あくまで一例です' },
     unfilled: { en: 'Some shop details are not filled in yet.', ja: '店が記入していない項目があります。' },
     showEnglish: { en: 'Show English', ja: '英語を見る' },
@@ -167,10 +167,32 @@ window.GUIDE = {
   },
 };
 
+// 出発前の「理解しました」確認ページ（2026-11-14 追加）
+// お客さんが母国語で読み、項目ごとに「理解しました」を押す。結果はサーバーに保存せず、
+// 完了画面をスタッフに見せる（A）か、お客さん自身がLINE等で店に送る（B）。
+window.GUIDE.pages.check = [
+  { id: 'C-00', t: 'h1', en: 'Before you drive: please confirm', ja: '出発前の確認' },
+  { id: 'C-01', t: 'lead', en: 'Please read each point in your language and tap "I understand". When you finish, show the last screen to our staff.', ja: '各項目をお客様の言語で読み、「理解しました」を押してください。最後の画面をスタッフに見せてください。' },
+  { id: 'C-02', t: 'booking', en: 'Booking number (optional)', ja: '予約番号（任意）' },
+  { id: 'C-10', t: 'citem', link: 'return', title: { en: 'Return time', ja: '返却時間' }, en: 'Return the car by the time on your booking. If you will be late, contact us before that time. A late return fee may apply.', ja: '予約の返却時間までに返却します。遅れるときは、その前に店へ連絡します。延長料金がかかることがあります。' },
+  { id: 'C-20', t: 'citem', link: 'return', title: { en: 'Full tank', ja: '満タン返し' }, en: 'Return the car with a full tank, filled near our shop. Show the fuel receipt. Otherwise, we charge a fuel fee.', ja: '店の近くで満タンにして返却し、給油のレシートを見せます。そうでない場合は燃料代がかかります。' },
+  { id: 'C-30', t: 'citem', link: 'return', title: { en: 'Car check and photos', ja: '車の確認と写真' }, en: 'Take 4 photos of the car now (front, back, left, right). At return, our staff will check the car with you.', ja: '今、車を4方向（前・後ろ・左・右）から撮影します。返却時にスタッフと一緒に車を確認します。' },
+  { id: 'C-40', t: 'citem', link: 'insurance', title: { en: 'Insurance and deductible', ja: '保険と免責額' }, en: 'Basic insurance is included, but you may still pay a deductible if there is damage. CDW can lower this.', ja: '基本補償は含まれていますが、損傷があると免責額を負担することがあります。免責補償（CDW）で減らせます。' },
+  { id: 'C-50', t: 'citem', link: 'insurance', title: { en: 'NOC', ja: 'NOC（休業補償）' }, en: 'If the car is damaged, you pay NOC (Non-Operation Charge), even with insurance or CDW.', ja: '車が損傷した場合、保険や免責補償に入っていても、NOC（休業補償）を負担します。' },
+  { id: 'C-60', t: 'citem', link: 'insurance', title: { en: 'If there is an accident', ja: '事故のとき' }, en: 'Call the police (110) and our shop right away, even for a small accident. If you do not report it, insurance may not pay.', ja: '小さな事故でも、すぐに警察（110）と店に連絡します。届け出ないと保険が使えないことがあります。' },
+  { id: 'C-90', t: 'note', en: 'This checks your understanding. It is not a signature or an agreement. The rental agreement (Japanese) takes priority.', ja: 'これは理解の確認です。署名や同意の代わりではありません。正式な内容は日本語の貸渡約款が優先されます。' },
+];
+
 // 画面の小さな文言（言語ごと）。翻訳ファイルで言語を足すときは、ここにも同じキーを入れる
 window.GUIDE_LTEXT = {
   en: { front: '① Front', back: '② Back', left: '③ Left', right: '④ Right', photos4: 'Take 4 photos of the car', maps: 'Open in Google Maps',
-        draft: 'This translation was made with AI and has not been checked by a native speaker yet.' },
+        draft: 'This translation was made with AI and has not been checked by a native speaker yet.',
+        understand: 'I understand', understood: 'Understood ✓', more: 'Read more', remain: 'Items left to confirm: ',
+        doneTitle: 'Confirmed', doneLead: 'Please show this screen to our staff.', share: 'Send to the shop (LINE, etc.)', copied: 'Copied. Please paste it into your message to the shop.',
+        time: 'Time', language: 'Language', booking: 'Booking number', again: 'Start over' },
   ja: { front: '① 前', back: '② 後ろ', left: '③ 左', right: '④ 右', photos4: '車を4方向から撮影', maps: 'Googleマップで開く',
-        draft: 'この翻訳はAIで作成したもので、ネイティブの確認はまだです。' },
+        draft: 'この翻訳はAIで作成したもので、ネイティブの確認はまだです。',
+        understand: '理解しました', understood: '理解しました ✓', more: 'くわしく読む', remain: '残りの確認：',
+        doneTitle: '確認完了', doneLead: 'この画面をスタッフに見せてください。', share: '店に送る（LINEなど）', copied: 'コピーしました。店へのメッセージに貼り付けてください。',
+        time: '日時', language: '言語', booking: '予約番号', again: '最初からやり直す' },
 };

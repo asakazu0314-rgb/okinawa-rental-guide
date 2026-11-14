@@ -22,9 +22,10 @@
         if (k === 'tabs') Object.keys(G.ui.tabs).forEach(function (n) { put(G.ui.tabs[n], 'tab.' + n); });
         else put(G.ui[k], 'ui.' + k);
       });
-      ['return', 'insurance'].forEach(function (pg) {
-        G.pages[pg].forEach(function (b) {
+      ['return', 'insurance', 'check'].forEach(function (pg) {
+        (G.pages[pg] || []).forEach(function (b) {
           put(b, b.id);
+          if (b.title) put(b.title, b.id + 't');
           (b.items || []).forEach(function (it, i) { put(it, b.id + '-' + (i + 1)); });
           (b.lines || []).forEach(function (l) { put(l, l.id); });
           (b.buttons || []).forEach(function (bt, i) { put(bt, b.id + '-btn' + (i + 1)); });
@@ -53,12 +54,13 @@
   }
   var lang = params.get('lang') || d.lang || store('guide-lang') || fromBrowser() || 'en';
   if (CODES.indexOf(lang) < 0) lang = 'en';
-  var page = (params.get('page') || d.page) === 'insurance' ? 'insurance' : 'return';
+  var page = params.get('page') || d.page;
+  if (page !== 'insurance' && page !== 'check') page = 'return';
   var review = params.get('review') === '1' || d.review === '1';
 
   // ページとリンクの対応（?を使わないファイル名にする。リンクを共有したときにクエリが消えても困らないように）
   function href(pg, lg) {
-    var f = (pg === 'insurance' ? 'insurance' : 'index') + (lg === 'ja' ? '-ja' : '') + '.html';
+    var f = (pg === 'insurance' ? 'insurance' : pg === 'check' ? 'check' : 'index') + (lg === 'ja' ? '-ja' : '') + '.html';
     return (lg === 'ja' || lg === 'en') ? f : f + '?lang=' + lg;
   }
 
@@ -170,6 +172,12 @@
           }).join('') + '</div></div>';
       case 'footer': return '<p class="disclaimer"' + a + '>' + icon('doc', 'small') + '<span>' + fmt(tx(b)) + '</span></p>';
       case 'footnote': return '<p class="footnote"' + a + '>' + fmt(tx(b)) + '</p>';
+      case 'booking':
+        return '<label class="booking"' + a + '>' + esc(tx(b)) + '<input id="bookingno" type="text" autocomplete="off"></label>';
+      case 'citem':
+        return '<div class="citem"' + a + ' data-cid="' + b.id + '"><h3>' + esc(tx(b.title)) + '</h3><p>' + fmt(tx(b)) + '</p>' +
+          '<div class="crow"><a class="more" href="' + href(b.link, lang) + '" target="_blank">' + esc(lt('more')) + '</a>' +
+          '<button type="button" class="ubtn">' + esc(lt('understand')) + '</button></div></div>';
       case 'nav': return '<a class="btn nav"' + a + ' href="' + href(b.to, lang) + '">' + esc(tx(b)) + '</a>';
     }
     return '';
@@ -185,7 +193,7 @@
       return '<a class="tab' + (page === name ? ' on' : '') + '" href="' + href(name, lang) + '">' + esc(tx(G.ui.tabs[name])) + '</a>';
     }
     return '<header><span class="shop">' + esc(tx(G.shop)) + '</span>' + langMenu() + '</header>' +
-      '<nav class="tabs">' + tab('return') + tab('insurance') + '</nav>';
+      '<nav class="tabs">' + tab('return') + tab('insurance') + tab('check') + '</nav>';
   }
 
   // ---- 確認シート（店長向け・日本語） ----
@@ -330,6 +338,72 @@
     decorate();
   }
 
+  // ---- 出発前の確認ページ（理解しました） ----
+  // チェックの結果はサーバーに保存しない。完了画面をスタッフに見せるか、お客さん自身が店に送る
+  function setupCheck(root) {
+    var items = G.pages.check.filter(function (b) { return b.t === 'citem'; });
+    var done = {};
+    var langLabel = (LANGS.filter(function (l) { return l.code === lang; })[0] || {}).label || lang;
+    var main = root.querySelector('main');
+    var remain = document.createElement('p');
+    remain.className = 'cremain';
+    var box = document.createElement('div');
+    box.className = 'cdone'; box.hidden = true;
+    main.insertBefore(remain, main.querySelector('.ver'));
+    main.insertBefore(box, main.querySelector('.ver'));
+
+    function stamp() {
+      var t = new Date();
+      function z(n) { return (n < 10 ? '0' : '') + n; }
+      return t.getFullYear() + '/' + z(t.getMonth() + 1) + '/' + z(t.getDate()) + ' ' + z(t.getHours()) + ':' + z(t.getMinutes());
+    }
+    function shareText(when, bk) {
+      // 店のスタッフが読めるよう日本語で作る
+      return '【' + G.shop.ja + '】出発前の確認：完了\n' +
+        (bk ? '予約番号：' + bk + '\n' : '') + '言語：' + langLabel + '\n日時：' + when + '\n' +
+        items.map(function (b) { return '✓ ' + b.title.ja; }).join('\n') +
+        '\n（お客様が母国語で読み、理解したと確認したもの。署名・同意の代わりではありません）';
+    }
+    function refresh() {
+      var left = items.filter(function (b) { return !done[b.id]; }).length;
+      root.querySelectorAll('.citem').forEach(function (el) {
+        var ok = !!done[el.dataset.cid];
+        el.classList.toggle('ok', ok);
+        el.querySelector('.ubtn').textContent = ok ? lt('understood') : lt('understand');
+      });
+      remain.textContent = left ? lt('remain') + left : '';
+      if (left) { box.hidden = true; return; }
+      var when = stamp();
+      var bk = ((document.getElementById('bookingno') || {}).value || '').trim().slice(0, 30);
+      box.innerHTML = '<div class="cbadge">✓</div><h2>' + esc(lt('doneTitle')) + '</h2><p>' + esc(lt('doneLead')) + '</p>' +
+        '<ul>' + items.map(function (b) {
+          return '<li>✓ ' + esc(tx(b.title)) + (lang !== 'ja' ? ' <span class="jp">（' + esc(b.title.ja) + '）</span>' : '') + '</li>';
+        }).join('') + '</ul>' +
+        '<p class="meta">' + esc(lt('time')) + '：' + when + '<br>' + esc(lt('language')) + '：' + esc(langLabel) + (bk ? '<br>' + esc(lt('booking')) + '：' + esc(bk) : '') + '</p>' +
+        '<p class="staffnote">スタッフの方へ：お客様は上の項目を母国語で読み、「理解しました」と確認しました。署名・同意の代わりではありません。</p>' +
+        '<button type="button" class="btn" id="cshare">' + esc(lt('share')) + '</button><p class="note" id="cmsg"></p>' +
+        '<button type="button" class="btn secondary" id="cagain">' + esc(lt('again')) + '</button>';
+      box.hidden = false;
+      box.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      document.getElementById('cshare').onclick = function () {
+        var text = shareText(when, bk);
+        if (navigator.share) { navigator.share({ text: text }).catch(function () {}); return; }
+        var ok = function () { document.getElementById('cmsg').textContent = lt('copied'); };
+        if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(ok, ok);
+        else ok();
+      };
+      document.getElementById('cagain').onclick = function () { done = {}; refresh(); window.scrollTo(0, 0); };
+    }
+    root.addEventListener('click', function (e) {
+      var b = e.target.closest('.ubtn');
+      if (!b) return;
+      var id = b.closest('.citem').dataset.cid;
+      done[id] = !done[id];
+      refresh();
+    });
+    refresh();
+  }
+
   // ---- 表示 ----
   var root = document.getElementById('app');
   if (review) lang = 'ja';
@@ -348,9 +422,10 @@
   var draft = (G.draftLangs || []).indexOf(lang) >= 0 && !review;
   root.innerHTML = head + (draft ? '<div class="draftnote">' + esc(lt('draft')) + '</div>' : '') +
     (n && !review ? '<div class="unfilled">' + esc(tx(G.ui.unfilled)) + ' (' + n + ')</div>' : '') +
-    '<main' + (review ? ' class="editing"' : '') + '>' + G.pages[page].map(block).join('') + '<p class="ver">' + G.version + ' / build 7</p></main>';
+    '<main' + (review ? ' class="editing"' : '') + '>' + G.pages[page].map(block).join('') + '<p class="ver">' + G.version + ' / build 8</p></main>';
   document.title = review ? G.shop.ja + ' 確認モード' : tx(G.shop) + ' — ' + tx(G.ui.tabs[page]);
   if (review) setupEdit(root, flatten());
+  if (page === 'check' && !review) setupCheck(root);
   var sel = document.getElementById('langsel');
   if (sel) sel.addEventListener('change', function () {
     store('guide-lang', sel.value);
