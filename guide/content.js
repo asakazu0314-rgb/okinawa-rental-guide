@@ -3,7 +3,18 @@
 // 架空の店「Sample Rent-a-Car（サンプルレンタカー）」用の試作。数字はすべて差し替え欄。
 
 window.GUIDE = {
-  version: 'v0.1',
+  version: 'v0.2',
+  // 対応言語（沖縄で外国人のレンタカー利用が多い国・地域の言語。2026-11-14の調査より）
+  // 台湾・香港＝繁體中文、韓国＝한국어、中国本土＝简体中文、そのほか＝English
+  langs: [
+    { code: 'en', label: 'English' },
+    { code: 'zh-Hant', label: '繁體中文' },
+    { code: 'ko', label: '한국어' },
+    { code: 'zh-Hans', label: '简体中文' },
+    { code: 'ja', label: '日本語' },
+  ],
+  // AIで翻訳し、ネイティブの確認がまだの言語（画面に注意書きを出す）
+  draftLangs: ['zh-Hant', 'ko', 'zh-Hans'],
   shop: { en: 'Sample Rent-a-Car', ja: 'サンプルレンタカー' },
   ui: {
     tabs: { return: { en: 'Return', ja: '返却' }, insurance: { en: 'Insurance', ja: '保険・NOC' } },

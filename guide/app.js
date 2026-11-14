@@ -348,7 +348,7 @@
   var draft = (G.draftLangs || []).indexOf(lang) >= 0 && !review;
   root.innerHTML = head + (draft ? '<div class="draftnote">' + esc(lt('draft')) + '</div>' : '') +
     (n && !review ? '<div class="unfilled">' + esc(tx(G.ui.unfilled)) + ' (' + n + ')</div>' : '') +
-    '<main' + (review ? ' class="editing"' : '') + '>' + G.pages[page].map(block).join('') + '<p class="ver">' + G.version + ' / build 5</p></main>';
+    '<main' + (review ? ' class="editing"' : '') + '>' + G.pages[page].map(block).join('') + '<p class="ver">' + G.version + ' / build 6</p></main>';
   document.title = review ? G.shop.ja + ' 確認モード' : tx(G.shop) + ' — ' + tx(G.ui.tabs[page]);
   if (review) setupEdit(root, flatten());
   var sel = document.getElementById('langsel');
