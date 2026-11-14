@@ -179,7 +179,7 @@
         (it.optional ? '<button data-v="skip">当店では使わない</button>' : '') + '</div>' +
         '<textarea placeholder="どう直したいですか（短くてOK）。金額などの記入もここに"></textarea></div>';
     });
-    html += '<div class="rfoot"><button class="btn" id="copy">結果をコピー（LINEに貼る）</button><p class="note" id="copied"></p></main>';
+    html += '<div class="rfoot"><button class="btn" id="copy">結果をコピー（LINEに貼る）</button><p class="note" id="copied"></p></div><p class="ver">' + G.version + ' / build 3</p></main>';
     root.innerHTML = html;
 
     function refresh() {
@@ -244,6 +244,6 @@
   var n = countPlaceholders();
   root.innerHTML = header() +
     (n ? '<div class="unfilled">' + esc(tx(G.ui.unfilled)) + ' (' + n + ')</div>' : '') +
-    '<main>' + G.pages[page].map(block).join('') + '</main>';
+    '<main>' + G.pages[page].map(block).join('') + '<p class="ver">' + G.version + ' / build 3</p></main>';
   document.title = tx(G.shop) + ' — ' + tx(G.ui.tabs[page]);
 })();
