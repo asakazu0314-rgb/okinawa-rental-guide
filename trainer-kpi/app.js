@@ -2,7 +2,7 @@
 // 予約システムのCSVを読み込み、トレーナーごとの予実を計算して、MTG用の報告文を作る。
 // CSVはブラウザの中だけで読む（サーバーに送らない・保存もしない）。目標の数字だけを、この端末に保存する。
 (function () {
-  var COL = { id: 'ID', st: '状態', date: 'セッション日付', price: 'セッション単価', staffId: 'スタッフ ID', staff: 'スタッフ 名前', cust: '顧客 ID', shop: '店舗 名前' };
+  var COL = { id: 'ID', st: '状態', date: 'セッション日付', price: 'セッション単価', staffId: 'スタッフ ID', staff: 'スタッフ 名前', cust: '顧客 ID', shop: '店舗 名前', start: 'セッション開始' };
   var DONE = '受講済み', BOOKED = '予約中', CANCEL = 'キャンセル';
   var rows = [];        // 読み込んだセッション（ID で重複を除く）
   var $ = function (id) { return document.getElementById(id); };
@@ -42,6 +42,7 @@
         price: Number(String(c[idx.price] || '0').replace(/[^\d.-]/g, '')) || 0,
         staffId: idx.staffId >= 0 ? c[idx.staffId] : c[idx.staff], staff: c[idx.staff],
         cust: idx.cust >= 0 ? c[idx.cust] : '', shop: idx.shop >= 0 ? c[idx.shop] : '',
+        start: idx.start >= 0 ? c[idx.start] : '',
       };
       if (!r.date || (r.id && seen[r.id])) return;
       if (r.id) seen[r.id] = 1;
@@ -68,13 +69,17 @@
     return Object.keys(m).sort();
   }
   function calc(month, staffId) {
-    var s = { done: 0, doneSales: 0, booked: 0, bookedSales: 0, cancel: 0, cust: {} };
-    rows.forEach(function (r) {
+    // セッション数は「トレーナー×開始時刻」で1本と数える（ペア・3人のレッスンは、お客さんの人数分の行がCSVに出るため）
+    // 売上は行ごと（お客さん1人ずつ）のセッション単価の合計
+    var s = { done: 0, doneSales: 0, booked: 0, bookedSales: 0, cancel: 0, cust: {} }, slot = { d: {}, b: {}, c: {} };
+    rows.forEach(function (r, i) {
       if (r.date.slice(0, 7) !== month || (staffId && r.staffId !== staffId)) return;
-      if (r.st === DONE) { s.done++; s.doneSales += r.price; s.cust[r.cust] = 1; }
-      else if (r.st === BOOKED) { s.booked++; s.bookedSales += r.price; s.cust[r.cust] = 1; }
-      else if (r.st === CANCEL) s.cancel++;
+      var k = r.staffId + '|' + (r.start || i);
+      if (r.st === DONE) { slot.d[k] = 1; s.doneSales += r.price; s.cust[r.cust] = 1; }
+      else if (r.st === BOOKED) { slot.b[k] = 1; s.bookedSales += r.price; s.cust[r.cust] = 1; }
+      else if (r.st === CANCEL) slot.c[k] = 1;
     });
+    s.done = Object.keys(slot.d).length; s.booked = Object.keys(slot.b).length; s.cancel = Object.keys(slot.c).length;
     s.clients = Object.keys(s.cust).filter(Boolean).length;
     s.sess = s.done + s.booked; s.sales = s.doneSales + s.bookedSales;
     return s;
@@ -105,9 +110,9 @@
     var a = pct(actual, goal), f = pct(forecast, goal);
     var cls = f == null ? '' : f >= 100 ? 'ok' : f >= 90 ? 'warn' : 'bad';
     return '<div class="metric"><div class="lbl"><span>' + label + '</span><span>目標 ' + (goal ? fmt(goal) : '未入力') + '</span></div>' +
-      '<div class="val">' + fmt(actual) + ' <span class="small">実績' + (a != null ? '（' + a + '%）' : '') + '</span></div>' +
+      '<div class="val">' + fmt(actual) + ' <span class="small">実施済み' + (a != null ? '（' + a + '%）' : '') + '</span></div>' +
       (goal ? '<div class="bar"><b style="width:' + Math.min(f, 100) + '%"></b><i style="width:' + Math.min(a, 100) + '%"></i><span class="pace" style="left:' + Math.min(pace * 100, 100) + '%"></span></div>' : '') +
-      '<div class="small">見込み ' + fmt(forecast) + (f != null ? ' <b class="' + cls + '">（' + f + '%）</b>' : '') + '</div></div>';
+      '<div class="small">予約済み ' + fmt(forecast - actual) + '　着地見込み ' + fmt(forecast) + (f != null ? ' <b class="' + cls + '">（' + f + '%）</b>' : '') + '</div></div>';
   }
   function card(name, s, g, pr, total) {
     var newLine = (g.newGoal || g.newAct) ? '<div class="small">新規：' + (g.newAct || 0) + '人' + (g.newGoal ? ' ／ 目標 ' + g.newGoal + '人（' + pct(g.newAct || 0, g.newGoal) + '%）' : '') + '</div>' : '';
@@ -132,8 +137,8 @@
   }
   function line(name, s, g) {
     var out = '■' + name + '\n' +
-      '　売上　実績 ' + yen(s.doneSales) + (g.sales ? '（' + pct(s.doneSales, g.sales) + '%）' : '') + '／見込み ' + yen(s.sales) + (g.sales ? '（' + pct(s.sales, g.sales) + '%）／目標 ' + yen(g.sales) : '') + '\n' +
-      '　セッション　実績 ' + s.done + '本／見込み ' + s.sess + '本' + (g.sess ? '（' + pct(s.sess, g.sess) + '%）／目標 ' + g.sess + '本' : '') + '\n';
+      '　売上　実績 ' + yen(s.doneSales) + (g.sales ? '（' + pct(s.doneSales, g.sales) + '%）' : '') + '／予約済み ' + yen(s.bookedSales) + '／着地見込み ' + yen(s.sales) + (g.sales ? '（' + pct(s.sales, g.sales) + '%）／目標 ' + yen(g.sales) : '') + '\n' +
+      '　セッション　実施済み ' + s.done + '本／予約済み ' + s.booked + '本／着地見込み ' + s.sess + '本' + (g.sess ? '（' + pct(s.sess, g.sess) + '%）／目標 ' + g.sess + '本' : '') + '\n';
     if (g.newGoal || g.newAct) out += '　新規 ' + (g.newAct || 0) + '人' + (g.newGoal ? '／目標 ' + g.newGoal + '人' : '') + '\n';
     out += '　キャンセル ' + s.cancel + '件　お客様 ' + s.clients + '人\n';
     return out;
@@ -146,7 +151,7 @@
       var g = goalOf(month, p.id), s = calc(month, p.id);
       return g.sess && s.sess < g.sess ? '・' + p.name + '：目標まであと ' + (g.sess - s.sess) + '本の予約が必要' : '';
     }).filter(Boolean);
-    return head + body + (gap.length ? '■要点（見込みが目標に届いていない人）\n' + gap.join('\n') : '');
+    return head + body + (gap.length ? '■要点（着地見込みが目標に届いていない人）\n' + gap.join('\n') : '');
   }
   function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
 
