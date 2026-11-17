@@ -56,3 +56,4 @@ pre { white-space:pre-wrap; background:#F2F4F6; border-radius:10px; padding:12px
 .segb.on.renew { background:var(--main); color:#fff; }
 .why { font-size:12px; color:var(--sub); font-weight:400; }
 .linkb { background:none; border:none; color:var(--main); text-decoration:underline; padding:0; min-height:0; font-size:12px; font-weight:600; }
+.newchk { display:inline-flex; align-items:center; gap:6px; margin:0 10px; font-weight:600; font-size:14px; white-space:nowrap; } .newchk input { width:22px; height:22px; }
