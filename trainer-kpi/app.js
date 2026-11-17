@@ -299,7 +299,11 @@
     rememberCustomers();
     var ms = months();
     $('loaded').innerHTML = esc(rows.length + '件のセッション' + (tickets.length ? '・' + tickets.length + '件のチケット' : '') + 'を読み込みました（トレーナー ' + staffList().length + '人）') + '<br>' + fileNotes.map(esc).join('<br>');
-    if (!ms.length) return;
+    if (!ms.length) {
+      // 間違ったファイル・空のファイル：次に何をすればいいかを出す（前の結果はそのまま）
+      $('loaded').innerHTML += '<br><b class="bad">セッションのデータが見つかりませんでした。</b>Gym\'sの「データ処理一覧」で書き出した「予約実行日」「セッション日」「チケット付与日」のCSVを選び直してください（Driveの「Gym\'s データ」→「latest」）。';
+      return;
+    }
     // 最初に表示する月：月初めのMTG（第1木曜日）までは先月、それ以降は今月。読み込んだ月になければ一番新しい月
     var now = new Date(), ym = function (d) { return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2); };
     var cur = ym(now), prev = ym(new Date(now.getFullYear(), now.getMonth() - 1, 1));
