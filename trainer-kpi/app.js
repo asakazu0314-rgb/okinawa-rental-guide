@@ -231,12 +231,11 @@
   }
   function card(name, s, g, pr, total, P) {
     var newLine = tickets.length || g.newGoal ? '<div class="small">新規：' + (tickets.length ? P.newN + '人' : '—') + (g.newGoal ? ' ／ 目標 ' + g.newGoal + '人' + (tickets.length ? '（' + pct(P.newN, g.newGoal) + '%）' : '') : '') + '</div>' : '';
-    var est = '<div class="small">消化売上（概算・税抜）' + yen(s.doneSales * 0.95) + '　報酬の見込み（40%）' + yen(s.doneSales * 0.95 * 0.4) + '</div>';
     var need = g.sess && pr.left ? Math.max(g.sess - s.sess, 0) : 0;
     return '<div class="kc' + (total ? ' total' : '') + '"><h3><span>' + esc(name) + '</span><span class="small">お客様 ' + s.clients + '人</span></h3>' +
       payMetric(P, +g.pay || 0, pr.rate) +
       metric('セッション', s.done, s.sess, +g.sess || 0, function (n) { return n + '本'; }, pr.rate) +
-      newLine + (total ? '' : est) + '<div class="small">ペア・グループ ' + s.groups + '本' + (s.shared ? '　同じ時間のマンツーマン ' + s.shared + '枠' : '') + '</div><div class="small">キャンセル ' + s.cancel + '件' + (need ? '　／　目標まであと ' + need + '本（予約で）' : '') + '</div></div>';
+      newLine + '<div class="small">ペア・グループ ' + s.groups + '本' + (s.shared ? '　同じ時間のマンツーマン ' + s.shared + '枠' : '') + '</div><div class="small">キャンセル ' + s.cancel + '件' + (need ? '　／　目標まであと ' + need + '本（予約で）' : '') + '</div></div>';
   }
   function sumGoals(month, st) {
     var t = { sess: 0, pay: 0, newGoal: 0 };
