@@ -37,7 +37,7 @@
     var n = 0, ds = [];
     t.slice(1).forEach(function (c) {
       var k = { id: c[I.id], name: c[I.name] || '', price: Number(c[I.price]) || 0, count: Number(c[I.count]) || 0,
-        date: (c[I.at] || '').slice(0, 10), manual: I.manual >= 0 ? c[I.manual] : '', cust: c[I.cust] || '', custName: c[I.custName] || '' };
+        date: (c[I.at] || '').slice(0, 10), at: c[I.at] || '', manual: I.manual >= 0 ? c[I.manual] : '', cust: c[I.cust] || '', custName: c[I.custName] || '' };
       if (!k.date || seen[k.id]) return;
       seen[k.id] = 1; tickets.push(k); ds.push(k.date); n++;
     });
@@ -164,11 +164,25 @@
     var best = '', n = 0; Object.keys(c).forEach(function (s) { if (c[s] > n) { n = c[s]; best = s; } });
     return best;
   }
-  // 新規＝そのお客様の、読み込んだ中で最初のチケット（サプリ以外）がこの月のもの
+  // 新規の判定（1か月分のCSVでも使えるように）
+  //  手で決めたもの（新規／更新の切り替え）があればそれを使う。なければ、次のどれかに当てはまれば「更新・追加」、どれもなければ「新規」
+  //  ①このiPadが前の月に覚えたお客様 ②読み込んだチケットに、それより前のチケットがある ③チケットを買う前にセッションを受けている
+  function loadJSON(k) { try { return JSON.parse(localStorage.getItem(k) || '{}') || {}; } catch (e) { return {}; } }
+  function saveJSON(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
+  var known = loadJSON('kpi-known');     // お客様ID → このiPadで最初に見た日
+  var newFlags = loadJSON('kpi-newflag'); // チケットID → 'new' / 'renew'（手で決めたもの）
+  function rememberCustomers() {
+    function see(c, d) { if (c && d && (!known[c] || d < known[c])) known[c] = d; }
+    rows.forEach(function (r) { if (r.st !== CANCEL) see(r.cust, r.date); });
+    tickets.forEach(function (k) { if (!/サプリ/.test(k.name) && !k.manual) see(k.cust, k.date); });
+    saveJSON('kpi-known', known);
+  }
   function isNewTicket(k) {
-    var first = null;
-    tickets.forEach(function (x) { if (x.cust === k.cust && !/サプリ/.test(x.name) && !x.manual && (!first || x.date < first.date)) first = x; });
-    return first === k;
+    if (newFlags[k.id]) return newFlags[k.id] === 'new';
+    if (known[k.cust] && known[k.cust] < k.date) return false;
+    if (tickets.some(function (x) { return x.cust === k.cust && x !== k && !/サプリ/.test(x.name) && !x.manual && x.at < k.at; })) return false;
+    if (rows.some(function (r) { return r.cust === k.cust && r.st !== CANCEL && r.start && r.start < k.at; })) return false;
+    return true;
   }
   function pays(month, staffId) {
     // 「集計から外す」にしたお客様（他のトレーナーの担当など）は、どこにも数えない
@@ -255,7 +269,7 @@
     var all = tickets.filter(function (k) { return k.date.slice(0, 7) === month && isCourse(k); });
     if (!all.length) { box.innerHTML = ''; return; }
     var head = '<h3 class="paytitle">この月の入金 ' + all.length + '件（担当を確かめてください）</h3>' +
-      '<p class="sub">「自動」はセッションCSVから判定した担当です。違っていたら選び直してください。他のトレーナーの担当で集計しないものは「集計から外す」。選んだ内容はこのiPadに保存され、次の月も使われます。' +
+      '<p class="sub">「新規／更新・追加」は押すと切り替わります（自動の判定が違うときだけ）。「自動」はセッションCSVから判定した担当です。違っていたら選び直してください。他のトレーナーの担当で集計しないものは「集計から外す」。選んだ内容はこのiPadに保存され、次の月も使われます。' +
       (unk.n ? '<br><b class="bad">担当が決まっていない入金が ' + unk.n + '件あります。</b>' : '') + '</p>';
     box.innerHTML = head + all.map(function (k) {
       var manual = owners[k.cust], auto = manual ? '' : ownerOf(k.cust), cur = manual || auto;
@@ -263,13 +277,14 @@
         st.map(function (p) { return '<option value="' + esc(p.id) + '"' + (manual === p.id ? ' selected' : '') + '>' + esc(p.name) + '</option>'; }).join('') +
         '<option value="' + EXCL + '"' + (manual === EXCL ? ' selected' : '') + '>集計から外す（他のトレーナーなど）</option>';
       return '<label class="row unk' + (!cur ? ' need' : '') + (manual === EXCL ? ' off' : '') + '">' + esc(k.date.slice(5)) + ' ' + esc(k.custName || k.cust) +
-        '（' + esc(k.name) + ' ' + yen(k.price) + (isNewTicket(k) ? '・新規' : '') + '）<select data-cust="' + esc(k.cust) + '">' + opts + '</select></label>';
+        '（' + esc(k.name) + ' ' + yen(k.price) + '）<button type="button" class="mini nb' + (isNewTicket(k) ? ' isnew' : '') + '" data-tid="' + esc(k.id) + '">' + (isNewTicket(k) ? '新規' : '更新・追加') + '</button><select data-cust="' + esc(k.cust) + '">' + opts + '</select></label>';
     }).join('');
   }
   function nameOf(id) { var p = staffList().filter(function (x) { return x.id === id; })[0]; return p ? p.name : id; }
   function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
 
   function afterLoad() {
+    rememberCustomers();
     var ms = months();
     $('loaded').innerHTML = esc(rows.length + '件のセッション' + (tickets.length ? '・' + tickets.length + '件のチケット' : '') + 'を読み込みました（トレーナー ' + staffList().length + '人）') + '<br>' + fileNotes.map(esc).join('<br>');
     if (!ms.length) return;
@@ -301,6 +316,12 @@
   });
   var soloBox = $('soloone');
   if (soloBox) { soloBox.checked = soloAsOne(); soloBox.addEventListener('change', function () { try { localStorage.setItem('kpi-solo-one', soloBox.checked ? '1' : '0'); } catch (e) {} render(); }); }
+  $('unknown').addEventListener('click', function (e) {
+    var b = e.target.closest('.nb'); if (!b) return;
+    e.preventDefault();
+    var k = tickets.filter(function (x) { return x.id === b.dataset.tid; })[0]; if (!k) return;
+    newFlags[k.id] = isNewTicket(k) ? 'renew' : 'new'; saveJSON('kpi-newflag', newFlags); render();
+  });
   $('unknown').addEventListener('change', function (e) {
     var c = e.target.dataset.cust; if (!c) return;
     if (e.target.value) owners[c] = e.target.value; else delete owners[c];

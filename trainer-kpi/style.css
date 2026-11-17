@@ -43,3 +43,4 @@ pre { white-space:pre-wrap; background:#F2F4F6; border-radius:10px; padding:12px
 .unk { font-weight:400; font-size:14px; flex-wrap:wrap; margin:6px 0; } .unk select { margin-left:auto; }
 .mini { min-height:32px; padding:4px 10px; font-size:13px; }
 .paytitle { font-size:16px; margin:16px 0 4px; } .unk.need { color:var(--bad); font-weight:700; } .unk.off { color:var(--sub); text-decoration:line-through; } .unk select { max-width:60%; }
+.nb { margin-left:6px; background:#fff; color:var(--sub); border-color:var(--line); } .nb.isnew { background:#FFF4E5; color:var(--warn); border-color:var(--warn); }
