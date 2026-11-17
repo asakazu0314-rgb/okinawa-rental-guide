@@ -4,17 +4,18 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>予実まとめ（試作）</title>
-  <link rel="stylesheet" href="style.css?v=1">
+  <link rel="stylesheet" href="style.css?v=2">
 </head>
 <body>
   <header class="top">
-    <strong>予実まとめ</strong><span class="tag">試作 v0.2</span>
+    <strong>予実まとめ</strong><span class="tag">試作 v0.3</span>
   </header>
   <main>
     <section class="card" id="step1">
       <h2>① セッションのCSVを読み込む</h2>
       <p class="sub">予約システムから出したCSVを選びます（トレーナーごとのファイルを何個でもまとめて選べます）。<br>
-      <b>CSVはこのiPadの中だけで計算し、どこにも送りません。</b></p>
+      <b>CSVはこのiPadの中だけで計算し、どこにも送りません。</b><br>
+      集計はいつも「セッション日付」（実際にトレーニングする日）で行います。「予約日時」（申し込んだ日）は使いません。月の報告には、セッション日付で書き出したCSVを使ってください。</p>
       <label class="filebtn">CSVを選ぶ<input type="file" id="files" accept=".csv,text/csv" multiple></label>
       <button type="button" class="ghost" id="demo">架空のデータで試す</button>
       <p class="sub" id="loaded"></p>
@@ -25,6 +26,8 @@
       <label class="row">対象の月 <select id="month"></select></label>
       <p class="sub">目標はトレーナーごとに入れます（このiPadに保存。月ごとに別々）。集客（新規）は、今はCSVから分からないので手で入れます。</p>
       <div class="tablewrap"><table id="goals"></table></div>
+      <label class="row chk"><input type="checkbox" id="soloone"> 同じ時間に入ったマンツーマン（別々のお客様）も1本と数える</label>
+      <p class="sub">ふだんはオフ（マンツーマンは1人ずつ1本）。ペア・3人コースのメニューは、何人でも1本です。</p>
     </section>
 
     <section class="card" id="step3" hidden>
@@ -43,8 +46,8 @@
       <p class="sub" id="copymsg"></p>
     </section>
 
-    <p class="foot">セッション数＝開始時刻ごとに1本（ペア・3人のレッスンも1本）。実施済み＝受講済み、予約済み＝予約中、着地見込み＝実施済み＋予約済み。キャンセルは数えません。売上＝お客様ごとの「セッション単価」の合計（消化売上）。<br>計算の決め方は試作です。店の決め方に合わせて直します。</p>
+    <p class="foot">セッション数：ペア・3人コースは同じ時間の全員で1本、マンツーマンは1人1本。同じお客様の重複行は1回。実施済み＝受講済み、予約済み＝予約中、着地見込み＝実施済み＋予約済み。キャンセルは数えません。売上＝お客様ごとの「セッション単価」の合計（消化売上）。<br>計算の決め方は試作です。店の決め方に合わせて直します。</p>
   </main>
-  <script src="app.js?v=2"></script>
+  <script src="app.js?v=3"></script>
 </body>
 </html>

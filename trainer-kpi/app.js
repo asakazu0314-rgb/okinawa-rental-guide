@@ -2,7 +2,7 @@
 // 予約システムのCSVを読み込み、トレーナーごとの予実を計算して、MTG用の報告文を作る。
 // CSVはブラウザの中だけで読む（サーバーに送らない・保存もしない）。目標の数字だけを、この端末に保存する。
 (function () {
-  var COL = { id: 'ID', st: '状態', date: 'セッション日付', price: 'セッション単価', staffId: 'スタッフ ID', staff: 'スタッフ 名前', cust: '顧客 ID', shop: '店舗 名前', start: 'セッション開始' };
+  var COL = { id: 'ID', st: '状態', date: 'セッション日付', price: 'セッション単価', staffId: 'スタッフ ID', staff: 'スタッフ 名前', cust: '顧客 ID', shop: '店舗 名前', start: 'セッション開始', menu: 'メニュー 名前', custName: '顧客 名前' };
   var DONE = '受講済み', BOOKED = '予約中', CANCEL = 'キャンセル';
   var rows = [];        // 読み込んだセッション（ID で重複を除く）
   var $ = function (id) { return document.getElementById(id); };
@@ -42,7 +42,7 @@
         price: Number(String(c[idx.price] || '0').replace(/[^\d.-]/g, '')) || 0,
         staffId: idx.staffId >= 0 ? c[idx.staffId] : c[idx.staff], staff: c[idx.staff],
         cust: idx.cust >= 0 ? c[idx.cust] : '', shop: idx.shop >= 0 ? c[idx.shop] : '',
-        start: idx.start >= 0 ? c[idx.start] : '',
+        start: idx.start >= 0 ? c[idx.start] : '', menu: idx.menu >= 0 ? c[idx.menu] : '', custName: idx.custName >= 0 ? c[idx.custName] : '',
       };
       if (!r.date || (r.id && seen[r.id])) return;
       if (r.id) seen[r.id] = 1;
@@ -68,19 +68,47 @@
     var m = {}; rows.forEach(function (r) { m[r.date.slice(0, 7)] = 1; });
     return Object.keys(m).sort();
   }
-  function calc(month, staffId) {
-    // セッション数は「トレーナー×開始時刻」で1本と数える（ペア・3人のレッスンは、お客さんの人数分の行がCSVに出るため）
-    // 売上は行ごと（お客さん1人ずつ）のセッション単価の合計
-    var s = { done: 0, doneSales: 0, booked: 0, bookedSales: 0, cancel: 0, cust: {} }, slot = { d: {}, b: {}, c: {} };
-    rows.forEach(function (r, i) {
-      if (r.date.slice(0, 7) !== month || (staffId && r.staffId !== staffId)) return;
-      var k = r.staffId + '|' + (r.start || i);
-      if (r.st === DONE) { slot.d[k] = 1; s.doneSales += r.price; s.cust[r.cust] = 1; }
-      else if (r.st === BOOKED) { slot.b[k] = 1; s.bookedSales += r.price; s.cust[r.cust] = 1; }
-      else if (r.st === CANCEL) slot.c[k] = 1;
+  // ---- セッション数の数え方（Gymsのエクスポート用） ----
+  // ・集計は必ず「セッション日付／セッション開始」を基準にする（「予約日時」は申し込んだ日なので使わない）
+  // ・同じトレーナー・同じセッション日付・同じ開始時刻を「1つの枠」とみる
+  // ・枠の中で、メニュー名に「ペア」「3人」を含むお客様が2人以上 → ペア／グループとして1本
+  // ・メニューがマンツーマンのお客様は、同じ時間でも別々の1人セッション → 1人ずつ1本
+  //   （設定「同じ時間のマンツーマンも1本」をオンにすると、枠ごとに1本）
+  // ・同じお客様が同じ枠に何行もある（キャンセル→再予約など）ときは1人として数える
+  // 売上は、お客様ごとのセッション単価の合計（同じ枠の重複行は1回）
+  function isGroupMenu(m) { return /ペア|3人/.test(m || ''); }
+  function soloAsOne() { try { return localStorage.getItem('kpi-solo-one') === '1'; } catch (e) { return false; } }
+  function countSlots(list) {
+    var slots = {}, n = 0, sales = 0, groups = 0, shared = 0, one = soloAsOne();
+    list.forEach(function (r, i) {
+      var k = r.staffId + '|' + r.date + '|' + (r.start || ('row' + i));
+      var who = r.cust || r.custName || ('row' + i);
+      slots[k] = slots[k] || {};
+      if (!slots[k][who]) slots[k][who] = r;
     });
-    s.done = Object.keys(slot.d).length; s.booked = Object.keys(slot.b).length; s.cancel = Object.keys(slot.c).length;
-    s.clients = Object.keys(s.cust).filter(Boolean).length;
+    Object.keys(slots).forEach(function (k) {
+      var people = Object.keys(slots[k]).map(function (w) { return slots[k][w]; });
+      people.forEach(function (r) { sales += r.price; });
+      var grp = people.filter(function (r) { return isGroupMenu(r.menu); });
+      var solo = people.length - grp.length;
+      if (grp.length >= 2) { n += 1; groups++; } else n += grp.length;
+      if (solo >= 2) shared++;
+      n += one && solo >= 2 ? 1 : solo;
+    });
+    return { n: n, sales: sales, groups: groups, shared: shared };
+  }
+  function calc(month, staffId) {
+    var d = [], b = [], c = [], cust = {};
+    rows.forEach(function (r) {
+      if (r.date.slice(0, 7) !== month || (staffId && r.staffId !== staffId)) return;
+      if (r.st === DONE) { d.push(r); cust[r.cust] = 1; }
+      else if (r.st === BOOKED) { b.push(r); cust[r.cust] = 1; }
+      else if (r.st === CANCEL) c.push(r);
+    });
+    var D = countSlots(d), B = countSlots(b), Cn = countSlots(c);
+    var s = { done: D.n, doneSales: D.sales, booked: B.n, bookedSales: B.sales, cancel: Cn.n,
+      groups: D.groups + B.groups, shared: D.shared + B.shared };
+    s.clients = Object.keys(cust).filter(Boolean).length;
     s.sess = s.done + s.booked; s.sales = s.doneSales + s.bookedSales;
     return s;
   }
@@ -120,7 +148,7 @@
     return '<div class="kc' + (total ? ' total' : '') + '"><h3><span>' + esc(name) + '</span><span class="small">お客様 ' + s.clients + '人</span></h3>' +
       metric('売上', s.doneSales, s.sales, +g.sales || 0, yen, pr.rate) +
       metric('セッション', s.done, s.sess, +g.sess || 0, function (n) { return n + '本'; }, pr.rate) +
-      newLine + '<div class="small">キャンセル ' + s.cancel + '件' + (need ? '　／　目標まであと ' + need + '本（予約で）' : '') + '</div></div>';
+      newLine + '<div class="small">ペア・グループ ' + s.groups + '本' + (s.shared ? '　同じ時間のマンツーマン ' + s.shared + '枠' : '') + '</div><div class="small">キャンセル ' + s.cancel + '件' + (need ? '　／　目標まであと ' + need + '本（予約で）' : '') + '</div></div>';
   }
   function sumGoals(month, st) {
     var t = { sess: 0, sales: 0, newGoal: 0, newAct: 0 };
@@ -185,6 +213,8 @@
         afterLoad();
       }).catch(function () { alert('架空のデータを読み込めませんでした'); });
   });
+  var soloBox = $('soloone');
+  if (soloBox) { soloBox.checked = soloAsOne(); soloBox.addEventListener('change', function () { try { localStorage.setItem('kpi-solo-one', soloBox.checked ? '1' : '0'); } catch (e) {} render(); }); }
   $('month').addEventListener('change', function () { renderGoals($('month').value); render(); });
   $('goals').addEventListener('input', function (e) {
     var el = e.target; if (!el.dataset.id) return;
