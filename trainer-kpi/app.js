@@ -2,7 +2,7 @@
 // 予約システムのCSVを読み込み、トレーナーごとの予実を計算して、MTG用の報告文を作る。
 // CSVはブラウザの中だけで読む（サーバーに送らない・保存もしない）。目標の数字だけを、この端末に保存する。
 (function () {
-  var COL = { id: 'ID', st: '状態', date: 'セッション日付', price: 'セッション単価', staffId: 'スタッフ ID', staff: 'スタッフ 名前', cust: '顧客 ID', shop: '店舗 名前', start: 'セッション開始', menu: 'メニュー 名前', custName: '顧客 名前' };
+  var COL = { id: 'ID', st: '状態', date: 'セッション日付', price: 'セッション単価', staffId: 'スタッフ ID', staff: 'スタッフ 名前', cust: '顧客 ID', shop: '店舗 名前', start: 'セッション開始', menu: 'メニュー 名前', custName: '顧客 名前', booked: '予約日時' };
   var DONE = '受講済み', BOOKED = '予約中', CANCEL = 'キャンセル';
   var rows = [];
   var fileNotes = [];  // 読み込んだファイルごとのメモ（期間など）
@@ -54,27 +54,32 @@
     var miss = need.filter(function (h) { return head.indexOf(h) < 0; });
     if (miss.length) { alert(name + '：この列が見つかりません → ' + miss.join('、')); return 0; }
     var idx = {}; Object.keys(COL).forEach(function (k) { idx[k] = head.indexOf(COL[k]); });
-    var seen = {}; rows.forEach(function (r) { if (r.id) seen[r.id] = 1; });
+    // ファイルの種類を見分ける
+    //  ・セッション日付のファイル：セッション日付が1か月の中 → セッション数（実施済み・予約・着地見込み）に使う
+    //  ・予約実行日のファイル：予約日時が1か月の中で、セッション日付は先の月まで広がる → 担当と新規の判定だけに使う
+    var body = t.slice(1);
+    function span(col) { var m = {}; if (col < 0) return 0; body.forEach(function (c) { if (c[col]) m[c[col].slice(0, 7)] = 1; }); return Object.keys(m).length; }
+    var src = span(idx.date) > 1 && span(idx.booked) === 1 ? 'booking' : 'session';
+    var seen = {}; rows.forEach(function (r) { if (r.id && r.src === src) seen[r.id] = 1; });
     var n = 0;
-    t.slice(1).forEach(function (c) {
+    body.forEach(function (c) {
       var r = {
         id: idx.id >= 0 ? c[idx.id] : '', st: c[idx.st], date: (c[idx.date] || '').slice(0, 10),
         price: Number(String(c[idx.price] || '0').replace(/[^\d.-]/g, '')) || 0,
         staffId: idx.staffId >= 0 ? c[idx.staffId] : c[idx.staff], staff: c[idx.staff],
         cust: idx.cust >= 0 ? c[idx.cust] : '', shop: idx.shop >= 0 ? c[idx.shop] : '',
         start: idx.start >= 0 ? c[idx.start] : '', menu: idx.menu >= 0 ? c[idx.menu] : '', custName: idx.custName >= 0 ? c[idx.custName] : '',
+        booked: idx.booked >= 0 ? c[idx.booked] : '', src: src,
       };
       if (!r.date || (r.id && seen[r.id])) return;
       if (r.id) seen[r.id] = 1;
       rows.push(r); n++;
     });
-    // ファイルの期間を確かめる。セッション日付が2か月以上にまたがるファイルは「予約日時」で書き出した可能性がある
-    var ds = t.slice(1).map(function (c) { return (c[idx.date] || '').slice(0, 10); }).filter(Boolean).sort();
-    if (ds.length) {
-      var span = {}; ds.forEach(function (x) { span[x.slice(0, 7)] = 1; });
-      fileNotes.push(name + '：セッション日付 ' + ds[0] + '〜' + ds[ds.length - 1] + '（' + (t.length - 1) + '行）' +
-        (Object.keys(span).length > 1 ? ' ⚠️ 月をまたいでいます。「予約日時」で書き出したCSVかもしれません。月の報告には「セッション日付」で書き出したCSVだけを使ってください' : ''));
-    }
+    var ds = body.map(function (c) { return (c[idx.date] || '').slice(0, 10); }).filter(Boolean).sort();
+    var bs = idx.booked >= 0 ? body.map(function (c) { return (c[idx.booked] || '').slice(0, 10); }).filter(Boolean).sort() : [];
+    fileNotes.push(src === 'booking'
+      ? name + '：予約実行日のファイル（予約日 ' + bs[0] + '〜' + bs[bs.length - 1] + '、' + body.length + '行）→ 担当と新規の判定に使います'
+      : name + '：セッション日のファイル（セッション日付 ' + ds[0] + '〜' + ds[ds.length - 1] + '、' + body.length + '行）→ セッション数に使います');
     return n;
   }
 
@@ -92,7 +97,8 @@
     return Object.keys(m).map(function (id) { return { id: id, name: m[id] }; }).sort(function (a, b) { return a.name.localeCompare(b.name, 'ja'); });
   }
   function months() {
-    var m = {}; rows.forEach(function (r) { m[r.date.slice(0, 7)] = 1; });
+    var m = {}; rows.forEach(function (r) { if (r.src === 'session') m[r.date.slice(0, 7)] = 1; });
+    if (!Object.keys(m).length) rows.forEach(function (r) { m[r.date.slice(0, 7)] = 1; });
     return Object.keys(m).sort();
   }
   // ---- セッション数の数え方（Gymsのエクスポート用） ----
@@ -125,10 +131,13 @@
     return { n: n, sales: sales, groups: groups, shared: shared };
   }
   function today() { var t = new Date(); return t.getFullYear() + '-' + ('0' + (t.getMonth() + 1)).slice(-2) + '-' + ('0' + t.getDate()).slice(-2); }
+  var useSrc = {};
+  function markSources() { useSrc = {}; rows.forEach(function (r) { if (r.src === 'session') useSrc[r.date.slice(0, 7)] = 1; }); }
   function calc(month, staffId) {
     var d = [], b = [], c = [], cust = {};
     rows.forEach(function (r) {
       if (r.date.slice(0, 7) !== month || (staffId && r.staffId !== staffId)) return;
+      if (useSrc[month] && r.src !== 'session') return; // セッション数は、セッション日のファイルがあればそれだけで数える
       // 実施済みは「本日分を含む」：今日の予約中も実施済みに入れる
       if (r.st === DONE || (r.st === BOOKED && r.date <= today())) { d.push(r); cust[r.cust] = 1; }
       else if (r.st === BOOKED) { b.push(r); cust[r.cust] = 1; }
@@ -182,6 +191,8 @@
     if (known[k.cust] && known[k.cust] < k.date) return false;
     if (tickets.some(function (x) { return x.cust === k.cust && x !== k && !/サプリ/.test(x.name) && !x.manual && x.at < k.at; })) return false;
     if (rows.some(function (r) { return r.cust === k.cust && r.st !== CANCEL && r.start && r.start < k.at; })) return false;
+    // 予約実行日のファイル：チケットを買う前に入れていた予約がある → 前からのお客様
+    if (rows.some(function (r) { return r.cust === k.cust && r.booked && r.booked < k.at; })) return false;
     return true;
   }
   function pays(month, staffId) {
@@ -284,6 +295,7 @@
   function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
 
   function afterLoad() {
+    markSources();
     rememberCustomers();
     var ms = months();
     $('loaded').innerHTML = esc(rows.length + '件のセッション' + (tickets.length ? '・' + tickets.length + '件のチケット' : '') + 'を読み込みました（トレーナー ' + staffList().length + '人）') + '<br>' + fileNotes.map(esc).join('<br>');
