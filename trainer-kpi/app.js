@@ -157,6 +157,7 @@
   function isCourse(k) { return k.price > 0 && !/サプリ/.test(k.name) && !k.manual; }
   function loadOwners() { try { return JSON.parse(localStorage.getItem('kpi-owner') || '{}') || {}; } catch (e) { return {}; } }
   var owners = loadOwners();
+  var EXCL = '__exclude';
   function ownerOf(cust) {
     if (owners[cust]) return owners[cust];
     var c = {}; rows.forEach(function (r) { if (r.cust === cust && r.st !== CANCEL) c[r.staffId] = (c[r.staffId] || 0) + 1; });
@@ -170,7 +171,8 @@
     return first === k;
   }
   function pays(month, staffId) {
-    var list = tickets.filter(function (k) { return k.date.slice(0, 7) === month && isCourse(k) && (staffId === undefined || ownerOf(k.cust) === staffId); });
+    // 「集計から外す」にしたお客様（他のトレーナーの担当など）は、どこにも数えない
+    var list = tickets.filter(function (k) { return k.date.slice(0, 7) === month && isCourse(k) && owners[k.cust] !== EXCL && (staffId === undefined || ownerOf(k.cust) === staffId); });
     var custNew = {};
     list.forEach(function (k) { if (isNewTicket(k)) custNew[k.cust] = 1; });
     return { amount: list.reduce(function (a, k) { return a + k.price; }, 0), n: list.length, newN: Object.keys(custNew).length, list: list };
@@ -223,7 +225,7 @@
     var tot = calc(month), tg = sumGoals(month, st);
     var all = pays(month), unk = pays(month, '');
     $('cards').innerHTML = card('店舗合計', tot, tg, pr, true, all) + st.map(function (p) { return card(p.name, calc(month, p.id), goalOf(month, p.id), pr, false, pays(month, p.id)); }).join('');
-    renderUnknown(unk, st);
+    renderUnknown(unk, st, month);
     $('report').textContent = report(month, st, pr, tot, tg);
   }
   function line(name, s, g, P) {
@@ -247,15 +249,24 @@
     return head + body + (gap.length ? '■要点（着地見込みが目標に届いていない人）\n' + gap.join('\n') : '');
   }
   // 担当が分からない入金（そのお客様のセッションがまだない等）→ 手で担当を決める（この端末に保存）
-  function renderUnknown(unk, st) {
+  // この月の入金を1件ずつ並べ、担当を確かめる・直す（自動の判定は、読み込んだセッションCSVによって変わるため）
+  function renderUnknown(unk, st, month) {
     var box = $('unknown'); if (!box) return;
-    if (!unk.n) { box.innerHTML = ''; return; }
-    box.innerHTML = '<p class="sub"><b>担当が決まっていない入金が ' + unk.n + '件あります。</b>担当を選んでください（このiPadに保存）。</p>' +
-      unk.list.map(function (k) {
-        return '<label class="row unk">' + esc(k.date.slice(5)) + ' ' + esc(k.custName || k.cust) + '（' + esc(k.name) + ' ' + yen(k.price) + '）<select data-cust="' + esc(k.cust) + '"><option value="">選ぶ</option>' +
-          st.map(function (p) { return '<option value="' + esc(p.id) + '">' + esc(p.name) + '</option>'; }).join('') + '</select></label>';
-      }).join('');
+    var all = tickets.filter(function (k) { return k.date.slice(0, 7) === month && isCourse(k); });
+    if (!all.length) { box.innerHTML = ''; return; }
+    var head = '<h3 class="paytitle">この月の入金 ' + all.length + '件（担当を確かめてください）</h3>' +
+      '<p class="sub">「自動」はセッションCSVから判定した担当です。違っていたら選び直してください。他のトレーナーの担当で集計しないものは「集計から外す」。選んだ内容はこのiPadに保存され、次の月も使われます。' +
+      (unk.n ? '<br><b class="bad">担当が決まっていない入金が ' + unk.n + '件あります。</b>' : '') + '</p>';
+    box.innerHTML = head + all.map(function (k) {
+      var manual = owners[k.cust], auto = manual ? '' : ownerOf(k.cust), cur = manual || auto;
+      var opts = '<option value="">' + (auto ? '自動：' + esc(nameOf(auto)) : '選ぶ（担当不明）') + '</option>' +
+        st.map(function (p) { return '<option value="' + esc(p.id) + '"' + (manual === p.id ? ' selected' : '') + '>' + esc(p.name) + '</option>'; }).join('') +
+        '<option value="' + EXCL + '"' + (manual === EXCL ? ' selected' : '') + '>集計から外す（他のトレーナーなど）</option>';
+      return '<label class="row unk' + (!cur ? ' need' : '') + (manual === EXCL ? ' off' : '') + '">' + esc(k.date.slice(5)) + ' ' + esc(k.custName || k.cust) +
+        '（' + esc(k.name) + ' ' + yen(k.price) + (isNewTicket(k) ? '・新規' : '') + '）<select data-cust="' + esc(k.cust) + '">' + opts + '</select></label>';
+    }).join('');
   }
+  function nameOf(id) { var p = staffList().filter(function (x) { return x.id === id; })[0]; return p ? p.name : id; }
   function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
 
   function afterLoad() {
