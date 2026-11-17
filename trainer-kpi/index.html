@@ -4,11 +4,11 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>予実まとめ（試作）</title>
-  <link rel="stylesheet" href="style.css?v=6">
+  <link rel="stylesheet" href="style.css?v=7">
 </head>
 <body>
   <header class="top">
-    <strong>予実まとめ</strong><span class="tag">試作 v0.8</span>
+    <strong>予実まとめ</strong><span class="tag">試作 v0.9</span>
   </header>
   <main>
     <section class="card" id="step1">
@@ -27,7 +27,11 @@
 
     <section class="card" id="step2" hidden>
       <h2>② 月と目標</h2>
-      <label class="row">対象の月 <select id="month"></select></label>
+      <div class="row monthrow"><span>対象の月</span>
+        <button type="button" class="ghost mini" id="mprev">◀ 前の月</button>
+        <select id="month"></select>
+        <button type="button" class="ghost mini" id="mnext">次の月 ▶</button></div>
+      <p class="sub">今月と先月のCSVを一緒に入れると、ここで切り替えられます。月初めのMTG（第1木曜日）までは、先月が最初に表示されます。</p>
       <p class="sub">目標はトレーナーごとに入れます（このiPadに保存。月ごとに別々）。入金と新規の実績は、チケット一覧から自動で出します。</p>
       <div class="tablewrap"><table id="goals"></table></div>
       <div id="unknown"></div>
@@ -53,6 +57,6 @@
 
     <p class="foot">セッション数：ペア・3人コースは同じ時間の全員で1本、マンツーマンは1人1本。同じお客様の重複行は1回。実施済み＝受講済み＋今日の予約（本日分含む）、予約済み＝明日以降の予約中、着地見込み＝実施済み＋予約済み。キャンセルは数えません。入金＝その月に付与されたコースのチケットの価格の合計（担当＝そのお客様を一番多く担当しているトレーナー）。新規＝チケットを買う前にセッションの記録がなく、このiPadが前の月に見ていないお客様（②で手直しできる）。消化売上（概算）＝セッション単価の合計×0.95（9月・10月の明細から出した概算）、報酬の見込み＝その40%。<br>計算の決め方は試作です。店の決め方に合わせて直します。</p>
   </main>
-  <script src="app.js?v=9"></script>
+  <script src="app.js?v=10"></script>
 </body>
 </html>

@@ -300,8 +300,13 @@
     var ms = months();
     $('loaded').innerHTML = esc(rows.length + '件のセッション' + (tickets.length ? '・' + tickets.length + '件のチケット' : '') + 'を読み込みました（トレーナー ' + staffList().length + '人）') + '<br>' + fileNotes.map(esc).join('<br>');
     if (!ms.length) return;
-    var now = new Date(), cur = now.getFullYear() + '-' + ('0' + (now.getMonth() + 1)).slice(-2);
-    $('month').innerHTML = ms.map(function (m) { return '<option value="' + m + '"' + (m === cur ? ' selected' : '') + '>' + m.replace('-', '年') + '月</option>'; }).join('');
+    // 最初に表示する月：月初めのMTG（第1木曜日）までは先月、それ以降は今月。読み込んだ月になければ一番新しい月
+    var now = new Date(), ym = function (d) { return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2); };
+    var cur = ym(now), prev = ym(new Date(now.getFullYear(), now.getMonth() - 1, 1));
+    var firstThu = 1 + ((4 - new Date(now.getFullYear(), now.getMonth(), 1).getDay() + 7) % 7);
+    var pick = now.getDate() <= firstThu && ms.indexOf(prev) >= 0 ? prev : ms.indexOf(cur) >= 0 ? cur : ms[ms.length - 1];
+    $('month').innerHTML = ms.map(function (m) { return '<option value="' + m + '"' + (m === pick ? ' selected' : '') + '>' + m.replace('-', '年') + '月' + (m === cur ? '（今月）' : m === prev ? '（先月）' : '') + '</option>'; }).join('');
+    updateMonthButtons();
     ['step2', 'step3', 'step4'].forEach(function (id) { $(id).hidden = false; });
     renderGoals($('month').value); render();
   }
@@ -340,7 +345,18 @@
     try { localStorage.setItem('kpi-owner', JSON.stringify(owners)); } catch (er) {}
     render();
   });
-  $('month').addEventListener('change', function () { renderGoals($('month').value); render(); });
+  function updateMonthButtons() {
+    var s = $('month'), i = s.selectedIndex;
+    $('mprev').disabled = i <= 0; $('mnext').disabled = i < 0 || i >= s.options.length - 1;
+  }
+  function moveMonth(d) {
+    var s = $('month'), i = s.selectedIndex + d;
+    if (i < 0 || i >= s.options.length) return;
+    s.selectedIndex = i; updateMonthButtons(); renderGoals(s.value); render();
+  }
+  $('mprev').addEventListener('click', function () { moveMonth(-1); });
+  $('mnext').addEventListener('click', function () { moveMonth(1); });
+  $('month').addEventListener('change', function () { updateMonthButtons(); renderGoals($('month').value); render(); });
   $('goals').addEventListener('input', function (e) {
     var el = e.target; if (!el.dataset.id) return;
     var m = $('month').value; goals[m] = goals[m] || {}; goals[m][el.dataset.id] = goals[m][el.dataset.id] || {};
