@@ -45,3 +45,14 @@ pre { white-space:pre-wrap; background:#F2F4F6; border-radius:10px; padding:12px
 .paytitle { font-size:16px; margin:16px 0 4px; } .unk.need { color:var(--bad); font-weight:700; } .unk.off { color:var(--sub); text-decoration:line-through; } .unk select { max-width:60%; }
 .nb { margin-left:6px; background:#fff; color:var(--sub); border-color:var(--line); } .nb.isnew { background:#FFF4E5; color:var(--warn); border-color:var(--warn); }
 .monthrow { flex-wrap:wrap; } .monthrow button:disabled { opacity:.35; }
+
+/* 新規／更新・追加の切り替え */
+.unk { align-items:flex-start; }
+.kind { display:inline-flex; flex-direction:column; gap:4px; margin:0 8px; }
+.seg { display:inline-flex; border:1px solid var(--line); border-radius:10px; overflow:hidden; }
+.segb { border:none; border-radius:0; background:#fff; color:var(--sub); font-weight:600; font-size:13px; min-height:34px; padding:4px 12px; }
+.segb + .segb { border-left:1px solid var(--line); }
+.segb.on.new { background:#B26A00; color:#fff; }
+.segb.on.renew { background:var(--main); color:#fff; }
+.why { font-size:12px; color:var(--sub); font-weight:400; }
+.linkb { background:none; border:none; color:var(--main); text-decoration:underline; padding:0; min-height:0; font-size:12px; font-weight:600; }
