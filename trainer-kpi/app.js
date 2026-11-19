@@ -118,9 +118,25 @@
   // ・同じお客様が同じ枠に何行もある（キャンセル→再予約など）ときは1人として数える
   // 売上は、お客様ごとのセッション単価の合計（同じ枠の重複行は1回）
   function isGroupMenu(m) { return /ペア|3人/.test(m || ''); }
-  function soloAsOne() { try { return localStorage.getItem('kpi-solo-one') !== '0'; } catch (e) { return true; } }
+  // メニューで数え方を決める：ペア・3人のメニュー＝同じ時間の全員で1本、マンツーマンのメニュー＝1人1本。
+  // ただし、マンツーマンの券で「いつも一緒に受けている2人」は、画面で「一緒（1本）」にできる（この端末に保存）
+  function loadTog() { try { return JSON.parse(localStorage.getItem('kpi-together') || '{}') || {}; } catch (e) { return {}; } }
+  var together = loadTog();
+  function pairKey(a, b) { return a < b ? a + '|' + b : b + '|' + a; }
+  function isTogether(a, b) { var v = together[pairKey(a, b)]; return v === undefined ? null : !!v; }
+  // 一緒かどうか未設定のペア：同じ時間に2回以上一緒に入っている2人は、最初は「一緒（1本）」とみなす（店の集計と合わせるため）
+  var autoTog = {};
+  function soloComponents(people) {
+    var ids = people.map(function (r) { return r.cust || r.custName; }), parent = {};
+    function f(x) { while (parent[x] && parent[x] !== x) x = parent[x]; return x; }
+    for (var i = 0; i < ids.length; i++) for (var j = i + 1; j < ids.length; j++) {
+      var t = isTogether(ids[i], ids[j]); if (t === null) t = !!autoTog[pairKey(ids[i], ids[j])];
+      if (t) { var a = f(ids[i]), b = f(ids[j]); if (a !== b) parent[b] = a; }
+    }
+    var c = {}; ids.forEach(function (x) { c[f(x)] = 1; }); return Object.keys(c).length;
+  }
   function countSlots(list) {
-    var slots = {}, n = 0, sales = 0, groups = 0, shared = 0, one = soloAsOne();
+    var slots = {}, n = 0, sales = 0, groups = 0, shared = 0;
     list.forEach(function (r, i) {
       var k = r.staffId + '|' + r.date + '|' + (r.start || ('row' + i));
       var who = r.cust || r.custName || ('row' + i);
@@ -131,10 +147,9 @@
       var people = Object.keys(slots[k]).map(function (w) { return slots[k][w]; });
       people.forEach(function (r) { sales += r.price; });
       var grp = people.filter(function (r) { return isGroupMenu(r.menu); });
-      var solo = people.length - grp.length;
+      var soloP = people.filter(function (r) { return !isGroupMenu(r.menu); });
       if (grp.length >= 2) { n += 1; groups++; } else n += grp.length;
-      if (solo >= 2) shared++;
-      n += one && solo >= 2 ? 1 : solo;
+      if (soloP.length >= 2) { shared++; n += soloComponents(soloP); } else n += soloP.length;
     });
     return { n: n, sales: sales, groups: groups, shared: shared };
   }
@@ -275,6 +290,7 @@
     $('cards').innerHTML = card('店舗合計', tot, tg, pr, true, all) + st.map(function (p) { return card(p.name, calc(month, p.id), goalOf(month, p.id), pr, false, pays(month, p.id)); }).join('');
     renderUnknown(unk, st, month);
     renderLate(month);
+    renderTogether(month);
     $('report').textContent = report(month, st, pr, tot, tg);
     if (window.renderMTG) window.renderMTG(month);
   }
@@ -331,11 +347,45 @@
           esc(r.date.slice(5).replace('-', '/')) + ' ' + esc((r.start || '').slice(11, 16)) + ' ' + esc(r.custName || r.cust) + '（キャンセル ' + esc(r.cancelAt.slice(5, 16).replace('-', '/')) + '）</label>';
       }).join('');
   }
+  // 同じ時間に入ったマンツーマン同士の一覧（一緒に受けているか、別々か）
+  function findSoloPairs(month) {
+    var slots = {}, pairs = {};
+    rows.forEach(function (r) {
+      if (r.date.slice(0, 7) !== month || r.st === CANCEL || isGroupMenu(r.menu) || (useSrc[month] && r.src !== 'session')) return;
+      var k = r.staffId + '|' + r.date + '|' + r.start; (slots[k] = slots[k] || {})[r.cust] = r;
+    });
+    Object.keys(slots).forEach(function (k) {
+      var ids = Object.keys(slots[k]);
+      for (var i = 0; i < ids.length; i++) for (var j = i + 1; j < ids.length; j++) {
+        var pk = pairKey(ids[i], ids[j]);
+        pairs[pk] = pairs[pk] || { a: slots[k][ids[i]], b: slots[k][ids[j]], dates: [] };
+        pairs[pk].dates.push(k.split('|')[1].slice(5).replace('-', '/') + ' ' + (k.split('|')[2] || '').slice(11, 16));
+      }
+    });
+    return pairs;
+  }
+  function updateAutoTog() {
+    autoTog = {};
+    var all = {}; months().forEach(function (m) { var p = findSoloPairs(m); Object.keys(p).forEach(function (k) { all[k] = (all[k] || 0) + p[k].dates.length; }); });
+    Object.keys(all).forEach(function (k) { if (all[k] >= 2) autoTog[k] = 1; });
+  }
+  function renderTogether(month) {
+    var box = $('together'); if (!box) return;
+    var pairs = findSoloPairs(month), keys = Object.keys(pairs);
+    if (!keys.length) { box.innerHTML = ''; return; }
+    box.innerHTML = '<h3 class="paytitle">同じ時間に入ったマンツーマン ' + keys.length + '組</h3><p class="sub">マンツーマンは1人1本で数えます。ただし、マンツーマンの券でいつも一緒に受けている2人は、チェックを入れると「一緒（1本）」になります（このiPadに保存）。何度も同じ時間に入っている2人は、最初からチェックが入っています。</p>' +
+      keys.map(function (k) {
+        var p = pairs[k], t = isTogether(p.a.cust, p.b.cust); if (t === null) t = !!autoTog[k];
+        return '<label class="row unk"><input type="checkbox" data-pair="' + esc(k) + '"' + (t ? ' checked' : '') + '> 一緒（1本）　' + esc(p.a.custName || p.a.cust) + ' ＆ ' + esc(p.b.custName || p.b.cust) +
+          '<small class="dim">' + p.dates.length + '回：' + esc(p.dates.join('、')) + '</small></label>';
+      }).join('');
+  }
   function nameOf(id) { var p = staffList().filter(function (x) { return x.id === id; })[0]; return p ? p.name : id; }
   function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
 
   function afterLoad() {
     markSources();
+    updateAutoTog();
     rememberCustomers();
     var ms = months();
     $('loaded').innerHTML = esc(rows.length + '件のセッション' + (tickets.length ? '・' + tickets.length + '件のチケット' : '') + 'を読み込みました（トレーナー ' + staffList().length + '人）') + '<br>' + fileNotes.map(esc).join('<br>');
@@ -375,8 +425,12 @@
         afterLoad();
       }).catch(function () { alert('架空のデータを読み込めませんでした'); });
   });
-  var soloBox = $('soloone');
-  if (soloBox) { soloBox.checked = soloAsOne(); soloBox.addEventListener('change', function () { try { localStorage.setItem('kpi-solo-one', soloBox.checked ? '1' : '0'); } catch (e) {} render(); }); }
+  $('together').addEventListener('change', function (e) {
+    var k = e.target.dataset.pair; if (!k) return;
+    together[k] = e.target.checked ? 1 : 0;
+    try { localStorage.setItem('kpi-together', JSON.stringify(together)); } catch (er) {}
+    render();
+  });
   $('late').addEventListener('change', function (e) {
     var id = e.target.dataset.waive; if (!id) return;
     if (e.target.checked) delete waived[id]; else waived[id] = 1;
