@@ -79,3 +79,4 @@ table.mt tr.warnrow th, table.mt tr.warnrow td { color:var(--warn); }
 .land input.landin { width:160px; min-width:0; display:inline-block; }
 .mh small { font-size:12px; font-weight:400; color:var(--sub); margin-left:6px; }
 .wn { display:flex; gap:10px; align-items:flex-start; } .wn > span { min-width:120px; font-weight:600; color:var(--text); font-size:13px; } .wn > span small { display:block; font-weight:400; color:var(--sub); } .wn textarea { flex:1; margin-top:0; }
+table.mt tbody th small { display:block; font-weight:400; font-size:11px; color:var(--sub); }

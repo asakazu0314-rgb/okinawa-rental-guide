@@ -38,6 +38,14 @@
     while (W.length < 5) W.push(null);
     return W;
   }
+  // 週2／週1の判定に使う期間：月初から7日ずつ（1〜7日／8〜14日…。29日以降は5週目）
+  function chunks7(m) {
+    var y = +m.slice(0, 4), mo = +m.slice(5, 7), days = new Date(y, mo, 0).getDate(), C = [];
+    for (var s1 = 1; s1 <= days && C.length < 5; s1 += 7) C.push([s1, Math.min(days, s1 + 6)]);
+    if (C.length === 5) C[4][1] = days;
+    while (C.length < 5) C.push(null);
+    return C;
+  }
   function wk(date, W) { var d = +date.slice(8, 10); for (var i = 0; i < 5; i++) if (W[i] && d >= W[i][0] && d <= W[i][1]) return i; return -1; }
   function wlabel(W, i) { var t = (i + 1) + '週目' + (cfg.week === 'thu' ? 'MT時点' : ''); return W[i] ? t + '<small>' + +month.slice(5, 7) + '/' + W[i][0] + '〜' + W[i][1] + '</small>' : t + '<small>—</small>'; }
 
@@ -174,7 +182,7 @@
     if (!cfg.staff && st.length === 1 && !cfg.chose) cfg.staff = st[0].id; // トレーナーが1人なら、その人を最初から選ぶ
     $('mstaff').innerHTML = '<option value="">店舗合計（目標は見るだけ）</option>' + st.map(function (p) { return '<option value="' + esc(p.id) + '"' + (p.id === cfg.staff ? ' selected' : '') + '>' + esc(p.name) + '</option>'; }).join('');
     $('mweek').value = cfg.week;
-    var W = weeks(month), P = payments(W), SE = sessions(W), NM = newMembers(W), CO = counselings(W), AG = activeGroups(W);
+    var W = weeks(month), P = payments(W), SE = sessions(W), NM = newMembers(W), CO = counselings(W), C7 = chunks7(month), AG = activeGroups(C7);
     var payLand = cfg.staff ? gobj(cfg.staff).payLand : null;
     var sessLand = sum(SE.done) + sum(SE.book), sg = weekGoals('sess'), pg = weekGoals('pay');
     var h = '';
@@ -207,14 +215,15 @@
     // 【セッション頻度表】稼働組数・アフター・週2/週1・セッション数（理想は手入力）
     var GO = cfg.staff ? gobj(cfg.staff) : {}, ideal = GO.ideal || {}, after = GO.after || [];
     function inp(field, i, v) { return cfg.staff ? '<input type="number" inputmode="numeric" min="0" data-' + field + '="' + i + '" value="' + (v != null && v !== '' ? v : '') + '">' : (v || ''); }
-    h += '<h3 class="mh">【セッション頻度表】</h3><p class="sub">稼働組数・週2組数・週1組数は自動（ペア・3人で一緒に受けている人は1組。そのMT週のセッションが2回以上＝週2、1回＝週1）。アフター組数と「理想」は手入力。週1組数＝アフターを抜いた総数−週2組数。</p>' +
+    h += '<h3 class="mh">【セッション頻度表】</h3><p class="sub">稼働組数・週2組数・週1組数は自動（ペア・3人で一緒に受けている人は1組。月初から7日ずつの期間（1〜7日／8〜14日…）で、その期間のセッションが2回以上＝週2、1回＝週1）。アフター組数と「理想」は手入力。週1組数＝アフターを抜いた総数−週2組数。</p>' +
       '<div class="tablewrap"><table class="mt"><thead><tr><th></th><th>稼働組数</th><th>アフター抜いた総数</th><th>週2組数</th><th>週1組数</th><th>アフター組数</th><th>セッション数</th></tr></thead><tbody>' +
       '<tr><th>理想</th><td>' + inp('ideal', 'act', ideal.act) + '</td><td>' + ((+ideal.act || 0) - (+ideal.after || 0) || '') + '</td><td>' + inp('ideal', 'two', ideal.two) + '</td><td>' +
       (ideal.act ? (+ideal.act - (+ideal.after || 0) - (+ideal.two || 0)) : '') + '</td><td>' + inp('ideal', 'after', ideal.after) + '</td><td>' + inp('ideal', 'sess', ideal.sess) + '</td></tr>' +
       AG.map(function (g, i) {
-        if (!g) return '<tr><th>' + (i + 1) + '週目MT時点</th><td colspan="6"></td></tr>';
+        var rl = '<th>' + (i + 1) + '週目MT時点<small>' + (C7[i] ? +month.slice(5, 7) + '/' + C7[i][0] + '〜' + C7[i][1] + 'で判定' : '—') + '</small></th>';
+        if (!g) return '<tr>' + rl + '<td colspan="6"></td></tr>';
         var tot = g.two + g.one, af = +after[i] || 0, net = tot - af;
-        return '<tr><th>' + wlabel(W, i) + '</th><td><b>' + tot + '</b></td><td>' + net + '</td><td>' + g.two + '</td><td>' + (net - g.two) + '</td><td>' + inp('after', i, after[i]) + '</td><td>' + (SE.wsum[i] != null ? SE.wsum[i] : '') + '</td></tr>';
+        return '<tr>' + rl + '<td><b>' + tot + '</b></td><td>' + net + '</td><td>' + g.two + '</td><td>' + (net - g.two) + '</td><td>' + inp('after', i, after[i]) + '</td><td>' + (SE.wsum[i] != null ? SE.wsum[i] : '') + '</td></tr>';
       }).join('') + '</tbody></table></div><p class="sub">セッション数（各週の行）＝そのMT時点の今月の着地見込み（実数値＋予約）。</p>';
     // 【既存会員へのアプローチ】【先週店舗MT振り返り（行動アクション＆結果）】週ごとのメモ
     h += weekNotes('appr', '【既存会員へのアプローチ】', W) + weekNotes('rev', '【先週店舗MT振り返り（行動アクション＆結果）】', W);
