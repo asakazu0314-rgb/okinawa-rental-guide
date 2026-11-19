@@ -57,3 +57,23 @@ pre { white-space:pre-wrap; background:#F2F4F6; border-radius:10px; padding:12px
 .why { font-size:12px; color:var(--sub); font-weight:400; }
 .linkb { background:none; border:none; color:var(--main); text-decoration:underline; padding:0; min-height:0; font-size:12px; font-weight:600; }
 .newchk { display:inline-flex; align-items:center; gap:6px; margin:0 10px; font-weight:600; font-size:14px; white-space:nowrap; } .newchk input { width:22px; height:22px; }
+/* MTG資料 */
+.mh { font-size:17px; margin:22px 0 6px; padding-top:10px; border-top:1px solid var(--line); }
+.mh:first-child { border-top:none; margin-top:6px; }
+table.mt { min-width:640px; font-size:14px; }
+table.mt th { white-space:nowrap; }
+table.mt thead th small { display:block; font-weight:400; font-size:11px; color:var(--sub); }
+table.mt tbody th { text-align:left; color:var(--text); font-weight:600; }
+table.mt td input { width:100%; min-width:70px; padding:4px 6px; text-align:right; }
+table.mt tr.act td, table.mt tr.act th { background:#EEF4F6; }
+table.mt tr.sub2 td, table.mt tr.sub2 th { color:var(--sub); font-size:13px; }
+table.mt.ch { margin-top:8px; }
+table.mt tr.warnrow th, table.mt tr.warnrow td { color:var(--warn); }
+.land { margin:8px 0 4px; font-size:15px; } .land small { color:var(--sub); margin-left:6px; font-size:12px; }
+.landin { width:140px; padding:4px 6px; font:inherit; border:1px solid var(--line); border-radius:8px; text-align:right; }
+.mnote { display:block; font-size:13px; color:var(--sub); margin-top:4px; }
+.mnote textarea { display:block; width:100%; font:inherit; font-size:14px; padding:6px 8px; border:1px solid var(--line); border-radius:8px; margin-top:2px; }
+.cform { margin-top:8px; } .cadd { flex-wrap:wrap; gap:8px; } .cadd input, .cadd select { font:inherit; padding:6px 8px; border:1px solid var(--line); border-radius:8px; }
+.clist .unk { gap:10px; }
+@media print { #stepM .row.monthrow, .cform, .mnote textarea:placeholder-shown { display:none; } }
+.land input.landin { width:160px; min-width:0; display:inline-block; }

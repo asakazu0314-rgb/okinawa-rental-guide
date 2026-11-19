@@ -268,6 +268,7 @@
     $('cards').innerHTML = card('店舗合計', tot, tg, pr, true, all) + st.map(function (p) { return card(p.name, calc(month, p.id), goalOf(month, p.id), pr, false, pays(month, p.id)); }).join('');
     renderUnknown(unk, st, month);
     $('report').textContent = report(month, st, pr, tot, tg);
+    if (window.renderMTG) window.renderMTG(month);
   }
   function line(name, s, g, P) {
     var out = '■' + name + '\n' +
@@ -331,7 +332,7 @@
     var pick = now.getDate() <= firstThu && ms.indexOf(prev) >= 0 ? prev : ms.indexOf(cur) >= 0 ? cur : ms[ms.length - 1];
     $('month').innerHTML = ms.map(function (m) { return '<option value="' + m + '"' + (m === pick ? ' selected' : '') + '>' + m.replace('-', '年') + '月' + (m === cur ? '（今月）' : m === prev ? '（先月）' : '') + '</option>'; }).join('');
     updateMonthButtons();
-    ['step2', 'step3', 'step4'].forEach(function (id) { $(id).hidden = false; });
+    ['step2', 'stepM', 'step3', 'step4'].forEach(function (id) { $(id).hidden = false; });
     renderGoals($('month').value); render();
   }
 
@@ -392,4 +393,13 @@
     if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(ok, ok); else ok();
   });
   $('print').addEventListener('click', function () { window.print(); });
+  // MTG資料（mtg.js）から使う部品
+  window.KPI = {
+    get rows() { return rows; }, get tickets() { return tickets; }, get goals() { return goals; },
+    DONE: DONE, BOOKED: BOOKED, CANCEL: CANCEL, EXCL: EXCL,
+    countSlots: countSlots, today: today, useSrc: function (m) { return !!useSrc[m]; },
+    isCourse: isCourse, isNewTicket: isNewTicket, ownerOf: ownerOf, owners: function () { return owners; },
+    staffList: staffList, saveGoals: function () { saveGoals(goals); }, yen: yen, esc: esc, isGroupMenu: isGroupMenu,
+    rerender: function () { render(); }
+  };
 })();
