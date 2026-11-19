@@ -2,7 +2,7 @@
 // 予約システムのCSVを読み込み、トレーナーごとの予実を計算して、MTG用の報告文を作る。
 // CSVはブラウザの中だけで読む（サーバーに送らない・保存もしない）。目標の数字だけを、この端末に保存する。
 (function () {
-  var COL = { id: 'ID', st: '状態', date: 'セッション日付', price: 'セッション単価', staffId: 'スタッフ ID', staff: 'スタッフ 名前', cust: '顧客 ID', shop: '店舗 名前', start: 'セッション開始', menu: 'メニュー 名前', custName: '顧客 名前', booked: '予約日時' };
+  var COL = { id: 'ID', st: '状態', date: 'セッション日付', price: 'セッション単価', staffId: 'スタッフ ID', staff: 'スタッフ 名前', cust: '顧客 ID', shop: '店舗 名前', start: 'セッション開始', menu: 'メニュー 名前', custName: '顧客 名前', booked: '予約日時', cancelAt: 'キャンセル日時' };
   var DONE = '受講済み', BOOKED = '予約中', CANCEL = 'キャンセル';
   var rows = [];
   var fileNotes = [];  // 読み込んだファイルごとのメモ（期間など）
@@ -77,7 +77,7 @@
         staffId: idx.staffId >= 0 ? c[idx.staffId] : c[idx.staff], staff: c[idx.staff],
         cust: idx.cust >= 0 ? c[idx.cust] : '', shop: idx.shop >= 0 ? c[idx.shop] : '',
         start: idx.start >= 0 ? nd(c[idx.start]) : '', menu: idx.menu >= 0 ? c[idx.menu] : '', custName: idx.custName >= 0 ? c[idx.custName] : '',
-        booked: idx.booked >= 0 ? nd(c[idx.booked]) : '', src: src,
+        booked: idx.booked >= 0 ? nd(c[idx.booked]) : '', cancelAt: idx.cancelAt >= 0 ? nd(c[idx.cancelAt]) : '', src: src,
       };
       if (!r.date || (r.id && seen[r.id])) return;
       if (r.id) seen[r.id] = 1;
@@ -141,13 +141,20 @@
   function today() { var t = new Date(); return t.getFullYear() + '-' + ('0' + (t.getMonth() + 1)).slice(-2) + '-' + ('0' + t.getDate()).slice(-2); }
   var useSrc = {};
   function markSources() { useSrc = {}; rows.forEach(function (r) { if (r.src === 'session') useSrc[r.date.slice(0, 7)] = 1; }); }
+  // 直前キャンセル：セッション日の前日22:00より後のキャンセルは「消化扱い」（実施に数える）。
+  // 会員様の事情で消化にしないものは、画面で外せる（この端末に保存）
+  var waived = loadJSON2('kpi-waive');
+  function loadJSON2(k) { try { return JSON.parse(localStorage.getItem(k) || '{}') || {}; } catch (e) { return {}; } }
+  function cutoff(date) { var d = new Date(+date.slice(0, 4), +date.slice(5, 7) - 1, +date.slice(8, 10) - 1); return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2) + ' 22:00:00'; }
+  function isLateCancel(r) { return r.st === CANCEL && !!r.cancelAt && r.cancelAt > cutoff(r.date); }
+  function isConsumed(r) { return r.st === DONE || (isLateCancel(r) && !waived[r.id]); }
   function calc(month, staffId) {
     var d = [], b = [], c = [], cust = {};
     rows.forEach(function (r) {
       if (r.date.slice(0, 7) !== month || (staffId && r.staffId !== staffId)) return;
       if (useSrc[month] && r.src !== 'session') return; // セッション数は、セッション日のファイルがあればそれだけで数える
       // 実施済みは「本日分を含む」：今日の予約中も実施済みに入れる
-      if (r.st === DONE || (r.st === BOOKED && r.date <= today())) { d.push(r); cust[r.cust] = 1; }
+      if (isConsumed(r) || (r.st === BOOKED && r.date <= today())) { d.push(r); cust[r.cust] = 1; }
       else if (r.st === BOOKED) { b.push(r); cust[r.cust] = 1; }
       else if (r.st === CANCEL) c.push(r);
     });
@@ -267,6 +274,7 @@
     var all = pays(month), unk = pays(month, '');
     $('cards').innerHTML = card('店舗合計', tot, tg, pr, true, all) + st.map(function (p) { return card(p.name, calc(month, p.id), goalOf(month, p.id), pr, false, pays(month, p.id)); }).join('');
     renderUnknown(unk, st, month);
+    renderLate(month);
     $('report').textContent = report(month, st, pr, tot, tg);
     if (window.renderMTG) window.renderMTG(month);
   }
@@ -311,6 +319,17 @@
   // 新規かどうか：チェックが入っていれば新規、外れていれば更新・追加（シンプルなチェック1つ）
   function kindSeg(k) {
     return '<label class="newchk"><input type="checkbox" data-tid="' + esc(k.id) + '"' + (isNewTicket(k) ? ' checked' : '') + '> 新規</label>';
+  }
+  // 直前キャンセル（消化扱い）の一覧：外したいものはチェックを外す
+  function renderLate(month) {
+    var box = $('late'); if (!box) return;
+    var list = rows.filter(function (r) { return r.date.slice(0, 7) === month && isLateCancel(r) && (!useSrc[month] || r.src === 'session'); });
+    if (!list.length) { box.innerHTML = ''; return; }
+    box.innerHTML = '<h3 class="paytitle">直前キャンセル（前日22:00より後）' + list.length + '件</h3><p class="sub">チェックが入っているものは「消化扱い」で実施に数えます。会員様の事情で消化にしないものは、チェックを外してください（このiPadに保存）。</p>' +
+      list.map(function (r) {
+        return '<label class="row unk"><input type="checkbox" data-waive="' + esc(r.id) + '"' + (waived[r.id] ? '' : ' checked') + '> 消化扱い　' +
+          esc(r.date.slice(5).replace('-', '/')) + ' ' + esc((r.start || '').slice(11, 16)) + ' ' + esc(r.custName || r.cust) + '（キャンセル ' + esc(r.cancelAt.slice(5, 16).replace('-', '/')) + '）</label>';
+      }).join('');
   }
   function nameOf(id) { var p = staffList().filter(function (x) { return x.id === id; })[0]; return p ? p.name : id; }
   function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
@@ -358,6 +377,12 @@
   });
   var soloBox = $('soloone');
   if (soloBox) { soloBox.checked = soloAsOne(); soloBox.addEventListener('change', function () { try { localStorage.setItem('kpi-solo-one', soloBox.checked ? '1' : '0'); } catch (e) {} render(); }); }
+  $('late').addEventListener('change', function (e) {
+    var id = e.target.dataset.waive; if (!id) return;
+    if (e.target.checked) delete waived[id]; else waived[id] = 1;
+    try { localStorage.setItem('kpi-waive', JSON.stringify(waived)); } catch (er) {}
+    render();
+  });
   $('unknown').addEventListener('click', function (e) {
     return;
   });
@@ -398,7 +423,7 @@
     get rows() { return rows; }, get tickets() { return tickets; }, get goals() { return goals; },
     DONE: DONE, BOOKED: BOOKED, CANCEL: CANCEL, EXCL: EXCL,
     countSlots: countSlots, today: today, useSrc: function (m) { return !!useSrc[m]; },
-    isCourse: isCourse, isNewTicket: isNewTicket, ownerOf: ownerOf, owners: function () { return owners; },
+    isCourse: isCourse, isConsumed: isConsumed, isNewTicket: isNewTicket, ownerOf: ownerOf, owners: function () { return owners; },
     staffList: staffList, saveGoals: function () { saveGoals(goals); }, yen: yen, esc: esc, isGroupMenu: isGroupMenu,
     rerender: function () { render(); }
   };

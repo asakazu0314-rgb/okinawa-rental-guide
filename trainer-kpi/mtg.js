@@ -49,7 +49,7 @@
   function sessions(W) {
     var t = K.today(), done = [[], [], [], [], []], book = [];
     sessRows().forEach(function (r) {
-      if (r.st === K.DONE || (r.st === K.BOOKED && r.date <= t)) { var i = wk(r.date, W); if (i >= 0) done[i].push(r); }
+      if (K.isConsumed(r) || (r.st === K.BOOKED && r.date <= t)) { var i = wk(r.date, W); if (i >= 0) done[i].push(r); }
       else if (r.st === K.BOOKED) book.push(r);
     });
     var D = done.map(function (l) { return K.countSlots(l).n; });
