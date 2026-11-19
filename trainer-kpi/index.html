@@ -4,11 +4,11 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>予実まとめ（試作）</title>
-  <link rel="stylesheet" href="style.css?v=11">
+  <link rel="stylesheet" href="style.css?v=12">
 </head>
 <body>
   <header class="top">
-    <strong>予実まとめ</strong><span class="tag">試作 v1.4</span>
+    <strong>予実まとめ</strong><span class="tag">試作 v1.5</span>
   </header>
   <main>
     <section class="card" id="step1">
@@ -42,7 +42,7 @@
     <section class="card" id="stepM" hidden>
       <h2>③ MTG資料</h2>
       <div class="row monthrow"><span>表示</span><select id="mstaff"></select>
-        <span>週の区切り</span><select id="mweek"><option value="7">1〜7日／8〜14日…</option><option value="mon">月曜はじまり</option></select></div>
+        <span>週の区切り</span><select id="mweek"><option value="thu">毎週木曜のMTまで</option><option value="7">1〜7日／8〜14日…</option><option value="mon">月曜はじまり</option></select></div>
       <div id="mtg"></div>
     </section>
 
@@ -65,6 +65,6 @@
     <p class="foot">セッション数：ペア・3人コースは同じ時間の全員で1本、マンツーマンは1人1本。同じお客様の重複行は1回。実施済み＝受講済み＋今日の予約（本日分含む）、予約済み＝明日以降の予約中、着地見込み＝実施済み＋予約済み。キャンセルは数えません。入金＝その月に付与されたコースのチケットの価格の合計（担当＝そのお客様を一番多く担当しているトレーナー）。新規＝チケットを買う前にセッションの記録がなく、このiPadが前の月に見ていないお客様（②で手直しできる）。<br>計算の決め方は試作です。店の決め方に合わせて直します。</p>
   </main>
   <script src="app.js?v=15"></script>
-  <script src="mtg.js?v=2"></script>
+  <script src="mtg.js?v=3"></script>
 </body>
 </html>

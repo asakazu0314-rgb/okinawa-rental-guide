@@ -9,13 +9,22 @@
   function S(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
   var channels = L('kpi-channel', {});   // チケットID → 流入経路（入会）
   var counsel = L('kpi-counsel', {});    // 月 → [{id, date, staff, ch, st:'予定'|'済'}]
-  var cfg = L('kpi-mtgcfg', { week: '7', staff: '' });
+  var cfg = L('kpi-mtgcfg', { week: 'thu', staff: '' });
+  if (!cfg.weekSet) cfg.week = 'thu'; // 店のMT（毎週木曜）区切りを初期にする
   var month = '';
 
   // ---- 週の区切り ----
   function weeks(m) {
     var y = +m.slice(0, 4), mo = +m.slice(5, 7), days = new Date(y, mo, 0).getDate(), W = [];
-    if (cfg.week === 'mon') {
+    if (cfg.week === 'thu') {
+      // 毎週木曜のMTまで：1週目＝1日〜最初の木曜、2週目＝金〜木 …
+      var s0 = 1;
+      while (s0 <= days) {
+        var dw = new Date(y, mo - 1, s0).getDay(), e0 = Math.min(days, s0 + ((4 - dw + 7) % 7));
+        W.push([s0, e0]); s0 = e0 + 1;
+      }
+      while (W.length > 5) { var lt = W.pop(); W[W.length - 1][1] = lt[1]; }
+    } else if (cfg.week === 'mon') {
       var d = 1;
       while (d <= days) {
         var dow = new Date(y, mo - 1, d).getDay(), end = Math.min(days, d + ((7 - dow) % 7)); // 日曜まで
@@ -30,7 +39,7 @@
     return W;
   }
   function wk(date, W) { var d = +date.slice(8, 10); for (var i = 0; i < 5; i++) if (W[i] && d >= W[i][0] && d <= W[i][1]) return i; return -1; }
-  function wlabel(W, i) { return W[i] ? (i + 1) + '週目<small>' + +month.slice(5, 7) + '/' + W[i][0] + '〜' + W[i][1] + '</small>' : (i + 1) + '週目<small>—</small>'; }
+  function wlabel(W, i) { var t = (i + 1) + '週目' + (cfg.week === 'thu' ? 'MT時点' : ''); return W[i] ? t + '<small>' + +month.slice(5, 7) + '/' + W[i][0] + '〜' + W[i][1] + '</small>' : t + '<small>—</small>'; }
 
   // ---- 実績の集計 ----
   function inStaff(id) { return !cfg.staff || id === cfg.staff; }
@@ -45,7 +54,10 @@
       if (r.st === K.DONE || (r.st === K.BOOKED && r.date <= t)) done[i].push(r);
       else if (r.st === K.BOOKED) book[i].push(r);
     });
-    return { done: done.map(function (l) { return K.countSlots(l).n; }), book: book.map(function (l) { return K.countSlots(l).n; }) };
+    var D = done.map(function (l) { return K.countSlots(l).n; }), B = book.map(function (l) { return K.countSlots(l).n; });
+    // 各MT時点の着地見込み：その週までに終わった週は実数値、今の週は今日時点の着地見込み、これからの週は空欄
+    var tw = wk(t, W), land = sum(D) + sum(B), wsum = W.map(function (w, i) { return !w ? null : (tw < 0 || i <= tw ? land : null); });
+    return { done: D, book: B, wsum: wsum };
   }
   function monthTickets() {
     var ow = K.owners();
@@ -146,6 +158,13 @@
     return '<label class="mnote">備考<textarea data-n="' + key + '" rows="2"' + (cfg.staff ? '' : ' disabled placeholder="トレーナーを選ぶと書けます"') + '>' + esc(v) + '</textarea></label>';
   }
   function n(v) { return String(v); }
+  function sumGoalField(f) { var t = 0, any = false; K.staffList().forEach(function (p) { var v = gobj(p.id)[f]; if (v != null && v !== '') { t += +v; any = true; } }); return any ? t : null; }
+  function weekNotes(key, title, W) {
+    var o = cfg.staff ? gobj(cfg.staff) : null, arr = o ? (o[key] || []) : [];
+    return '<h3 class="mh">' + title + '</h3>' + [0, 1, 2, 3, 4].map(function (i) {
+      return '<label class="mnote wn"><span>' + wlabel(W, i) + '</span><textarea rows="2" data-wn="' + key + '" data-i="' + i + '"' + (o ? '' : ' disabled placeholder="トレーナーを選ぶと書けます"') + '>' + esc(arr[i] || '') + '</textarea></label>';
+    }).join('');
+  }
 
   function render(m) {
     month = m; if (!month) return;
@@ -164,20 +183,41 @@
       (pg && (payLand || sum(P)) ? '　<b class="' + cls(+payLand || sum(P), sum(pg)) + '">' + pctS(+payLand || sum(P), sum(pg)) + '</b>' : '') + '<small>（空欄なら実数値と同じ）</small></p>' + note('payNote');
     h += '<h3 class="mh">【セッション数】</h3>' + '<div class="tablewrap">' + table({ key: 'sess', W: W, fmt: n, goal: sg, actual: SE.done, extra: [['予約（これから）', SE.book]] }) + '</div>' +
       '<p class="land">今月着地予定：<b>' + sessLand + '本</b>' + (sg ? '　<b class="' + cls(sessLand, sum(sg)) + '">' + pctS(sessLand, sum(sg)) + '</b>' : '') + '<small>（実数値＋これからの予約。実数値は本日分を含む）</small></p>' + note('sessNote');
-    h += '<h3 class="mh">【入会目標】</h3>' + '<div class="tablewrap">' + table({ key: 'new', W: W, fmt: n, goal: weekGoals('new'), actual: NM.a }) + '</div>' +
-      '<div class="tablewrap">' + chTable(W, NM.byCh, '流入経路') + '</div>';
+    // 【入会目標及び実数値】当月新規目標は月で1つ。週ごとの実数値を流入経路別に
+    var ng = cfg.staff ? gobj(cfg.staff).newGoal : sumGoalField('newGoal');
+    h += '<h3 class="mh">【入会目標及び実数値】<small>新規獲得目標件数と、達成するための行動も備考に</small></h3><div class="tablewrap"><table class="mt"><thead><tr><th></th><th>当月新規目標</th>' +
+      [0, 1, 2, 3, 4].map(function (i) { return '<th>' + wlabel(W, i) + '</th>'; }).join('') + '<th>合計</th><th>達成率</th></tr></thead><tbody>' +
+      '<tr class="act"><th>合計</th><td>' + (cfg.staff ? '<input type="number" inputmode="numeric" min="0" data-f="newGoal" value="' + (ng != null && ng !== '' ? ng : '') + '">' : (ng || '—')) + '</td>' +
+      NM.a.map(function (v, i) { return '<td>' + (W[i] ? v : '') + '</td>'; }).join('') + '<td><b>' + sum(NM.a) + '</b></td><td><b class="' + cls(sum(NM.a), +ng) + '">' + pctS(sum(NM.a), +ng) + '</b></td></tr>' +
+      CH.concat(NM.byCh['未設定'] ? ['未設定'] : []).map(function (c) { var a2 = NM.byCh[c] || [0, 0, 0, 0, 0]; return '<tr' + (c === '未設定' ? ' class="warnrow"' : '') + '><th>' + c + '</th><td></td>' + a2.map(function (v, i) { return '<td>' + (W[i] ? v : '') + '</td>'; }).join('') + '<td>' + sum(a2) + '</td><td></td></tr>'; }).join('') +
+      '</tbody></table></div>' + note('newNote');
     if (NM.list.length) {
       h += '<p class="sub">今月の入会（新規）に流入経路を選んでください：</p>' + NM.list.map(function (k) {
         return '<label class="row unk">' + esc(k.date.slice(5).replace('-', '/')) + ' ' + esc(k.custName || k.cust) + '<select data-ch="' + esc(k.id) + '"><option value="">未設定</option>' +
           CH.map(function (c) { return '<option' + (channels[k.id] === c ? ' selected' : '') + '>' + c + '</option>'; }).join('') + '</select></label>';
       }).join('');
     }
-    h += '<h3 class="mh">【カウンセリング対応】</h3>' + '<div class="tablewrap">' + table({ key: 'csl', W: W, fmt: n, goal: weekGoals('csl'), actual: CO.done, extra: [['予定', CO.plan]] }) + '</div>' +
-      '<div class="tablewrap">' + chTable(W, CO.byCh, '流入経路（済）') + '</div>' + counselForm();
-    h += '<h3 class="mh">【稼働組数】</h3><p class="sub">ペア・3人で一緒に受けている人は1組。その週のセッション（実施済み＋予約）が2回以上＝週2ペース、1回＝週1ペース。</p>' +
-      '<div class="tablewrap"><table class="mt"><thead><tr><th></th>' + [0, 1, 2, 3, 4].map(function (i) { return '<th>' + wlabel(W, i) + '</th>'; }).join('') + '</tr></thead><tbody>' +
-      [['週2ペース', 'two'], ['週1ペース', 'one']].map(function (x) { return '<tr><th>' + x[0] + '</th>' + AG.map(function (g) { return '<td>' + (g ? g[x[1]] + '組' : '') + '</td>'; }).join('') + '</tr>'; }).join('') +
-      '<tr class="act"><th>合計</th>' + AG.map(function (g) { return '<td><b>' + (g ? (g.two + g.one) + '組' : '') + '</b></td>'; }).join('') + '</tr></tbody></table></div>';
+    // 【カウンセリング対応数】※カウンセリングと無料体験は同義。済を経路別に、予定は「今後予定」に
+    h += '<h3 class="mh">【カウンセリング対応数】<small>※カウンセリングと無料体験は同義</small></h3><div class="tablewrap"><table class="mt"><thead><tr><th></th>' +
+      [0, 1, 2, 3, 4].map(function (i) { return '<th>' + wlabel(W, i) + '</th>'; }).join('') + '<th>合計</th></tr></thead><tbody>' +
+      '<tr class="act"><th>合計（済）</th>' + CO.done.map(function (v, i) { return '<td><b>' + (W[i] ? v : '') + '</b></td>'; }).join('') + '<td><b>' + sum(CO.done) + '</b></td></tr>' +
+      CH.map(function (c) { var a3 = CO.byCh[c] || [0, 0, 0, 0, 0]; return '<tr><th>' + c + '</th>' + a3.map(function (v, i) { return '<td>' + (W[i] ? v : '') + '</td>'; }).join('') + '<td>' + sum(a3) + '</td></tr>'; }).join('') +
+      '<tr class="sub2"><th>今後予定しているカウンセリング・無料体験</th>' + CO.plan.map(function (v, i) { return '<td>' + (W[i] ? v : '') + '</td>'; }).join('') + '<td>' + sum(CO.plan) + '</td></tr>' +
+      '</tbody></table></div>' + counselForm();
+    // 【セッション頻度表】稼働組数・アフター・週2/週1・セッション数（理想は手入力）
+    var GO = cfg.staff ? gobj(cfg.staff) : {}, ideal = GO.ideal || {}, after = GO.after || [];
+    function inp(field, i, v) { return cfg.staff ? '<input type="number" inputmode="numeric" min="0" data-' + field + '="' + i + '" value="' + (v != null && v !== '' ? v : '') + '">' : (v || ''); }
+    h += '<h3 class="mh">【セッション頻度表】</h3><p class="sub">稼働組数・週2組数・週1組数は自動（ペア・3人で一緒に受けている人は1組。そのMT週のセッションが2回以上＝週2、1回＝週1）。アフター組数と「理想」は手入力。週1組数＝アフターを抜いた総数−週2組数。</p>' +
+      '<div class="tablewrap"><table class="mt"><thead><tr><th></th><th>稼働組数</th><th>アフター抜いた総数</th><th>週2組数</th><th>週1組数</th><th>アフター組数</th><th>セッション数</th></tr></thead><tbody>' +
+      '<tr><th>理想</th><td>' + inp('ideal', 'act', ideal.act) + '</td><td>' + ((+ideal.act || 0) - (+ideal.after || 0) || '') + '</td><td>' + inp('ideal', 'two', ideal.two) + '</td><td>' +
+      (ideal.act ? (+ideal.act - (+ideal.after || 0) - (+ideal.two || 0)) : '') + '</td><td>' + inp('ideal', 'after', ideal.after) + '</td><td>' + inp('ideal', 'sess', ideal.sess) + '</td></tr>' +
+      AG.map(function (g, i) {
+        if (!g) return '<tr><th>' + (i + 1) + '週目MT時点</th><td colspan="6"></td></tr>';
+        var tot = g.two + g.one, af = +after[i] || 0, net = tot - af;
+        return '<tr><th>' + wlabel(W, i) + '</th><td><b>' + tot + '</b></td><td>' + net + '</td><td>' + g.two + '</td><td>' + (net - g.two) + '</td><td>' + inp('after', i, after[i]) + '</td><td>' + (SE.wsum[i] != null ? SE.wsum[i] : '') + '</td></tr>';
+      }).join('') + '</tbody></table></div><p class="sub">セッション数（各週の行）＝そのMT時点の今月の着地見込み（実数値＋予約）。</p>';
+    // 【既存会員へのアプローチ】【先週店舗MT振り返り（行動アクション＆結果）】週ごとのメモ
+    h += weekNotes('appr', '【既存会員へのアプローチ】', W) + weekNotes('rev', '【先週店舗MT振り返り（行動アクション＆結果）】', W);
     box.innerHTML = h;
     $('report').textContent = reportText(W, P, pg, payLand, SE, sg, sessLand, NM, CO, AG);
   }
@@ -204,9 +244,9 @@
     if (cfg.staff && gobj(cfg.staff).payNote) out += '　備考：' + gobj(cfg.staff).payNote + '\n';
     out += '■セッション数\n　実数値：' + row(SE.done, n) + '／合計 ' + sum(SE.done) + '本' + (sg ? '（目標 ' + sum(sg) + '本・達成率 ' + pctS(sum(SE.done), sum(sg)) + '）' : '') + '\n　今月着地予定：' + sessLand + '本' + (sg ? '（' + pctS(sessLand, sum(sg)) + '）' : '') + '\n';
     if (cfg.staff && gobj(cfg.staff).sessNote) out += '　備考：' + gobj(cfg.staff).sessNote + '\n';
-    var ng = weekGoals('new'), cg = weekGoals('csl');
-    out += '■入会：' + sum(NM.a) + '人' + (ng ? '（目標 ' + sum(ng) + '人・' + pctS(sum(NM.a), sum(ng)) + '）' : '') + chLine(NM.byCh) + '\n';
-    out += '■カウンセリング：済 ' + sum(CO.done) + '件・予定 ' + sum(CO.plan) + '件' + (cg ? '（目標 ' + sum(cg) + '件・' + pctS(sum(CO.done), sum(cg)) + '）' : '') + chLine(CO.byCh) + '\n';
+    var ng = cfg.staff ? gobj(cfg.staff).newGoal : sumGoalField('newGoal');
+    out += '■入会：' + sum(NM.a) + '人' + (ng ? '（当月新規目標 ' + ng + '人・' + pctS(sum(NM.a), +ng) + '）' : '') + chLine(NM.byCh) + '\n';
+    out += '■カウンセリング対応：' + sum(CO.done) + '件' + chLine(CO.byCh) + '／今後予定 ' + sum(CO.plan) + '件\n';
     out += '■稼働組数：' + AG.map(function (g, i) { return g ? (i + 1) + '週 ' + (g.two + g.one) + '組（週2 ' + g.two + '・週1 ' + g.one + '）' : ''; }).filter(Boolean).join('／') + '\n';
     return out;
   }
@@ -221,9 +261,13 @@
   document.addEventListener('change', function (e) {
     var t = e.target;
     if (t.id === 'mstaff') { cfg.staff = t.value; cfg.chose = true; saveAndRender(); return; }
-    if (t.id === 'mweek') { cfg.week = t.value; saveAndRender(); return; }
+    if (t.id === 'mweek') { cfg.week = t.value; cfg.weekSet = true; saveAndRender(); return; }
     if (t.dataset.g && cfg.staff) { var o = gobj(cfg.staff); o.W[t.dataset.g] = o.W[t.dataset.g] || []; o.W[t.dataset.g][+t.dataset.i] = t.value === '' ? null : +t.value; syncTotals(); saveAndRender(); return; }
     if (t.dataset.l && cfg.staff) { gobj(cfg.staff)[t.dataset.l] = t.value === '' ? null : +t.value; saveAndRender(); return; }
+    if (t.dataset.f && cfg.staff) { gobj(cfg.staff)[t.dataset.f] = t.value === '' ? null : +t.value; saveAndRender(); return; }
+    if (t.dataset.ideal && cfg.staff) { var g1 = gobj(cfg.staff); g1.ideal = g1.ideal || {}; g1.ideal[t.dataset.ideal] = t.value === '' ? null : +t.value; saveAndRender(); return; }
+    if (t.dataset.after != null && cfg.staff && t.tagName === 'INPUT') { var g2 = gobj(cfg.staff); g2.after = g2.after || []; g2.after[+t.dataset.after] = t.value === '' ? null : +t.value; saveAndRender(); return; }
+    if (t.dataset.wn && cfg.staff) { var g3 = gobj(cfg.staff); g3[t.dataset.wn] = g3[t.dataset.wn] || []; g3[t.dataset.wn][+t.dataset.i] = t.value; K.saveGoals(); return; }
     if (t.dataset.n && cfg.staff) { gobj(cfg.staff)[t.dataset.n] = t.value; K.saveGoals(); K.rerender(); return; }
     if (t.dataset.ch) { if (t.value) channels[t.dataset.ch] = t.value; else delete channels[t.dataset.ch]; S('kpi-channel', channels); K.rerender(); return; }
     if (t.dataset.cst) { (counsel[month] || []).forEach(function (c) { if (c.id === t.dataset.cst) c.st = t.value; }); S('kpi-counsel', counsel); K.rerender(); }
