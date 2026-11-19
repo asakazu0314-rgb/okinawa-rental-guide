@@ -80,3 +80,15 @@ table.mt tr.warnrow th, table.mt tr.warnrow td { color:var(--warn); }
 .mh small { font-size:12px; font-weight:400; color:var(--sub); margin-left:6px; }
 .wn { display:flex; gap:10px; align-items:flex-start; } .wn > span { min-width:120px; font-weight:600; color:var(--text); font-size:13px; } .wn > span small { display:block; font-weight:400; color:var(--sub); } .wn textarea { flex:1; margin-top:0; }
 table.mt tbody th small { display:block; font-weight:400; font-size:11px; color:var(--sub); }
+/* MTG資料：管理表と同じ見せ方（項目ごとにトレーナーのブロック） */
+table.mt.blk { margin-bottom:14px; border:1px solid var(--line); }
+table.mt.blk tr.bh th { background:#E4E8EC; color:var(--text); font-weight:700; border-bottom:1px solid #C9D0D6; }
+table.mt.blk tr.bh th:first-child { background:#C9D0D6; min-width:120px; }
+table.mt.blk th.ind { padding-left:18px; font-weight:500; }
+table.mt.blk td.nc, table.mt.blk th.nc { min-width:220px; text-align:left; vertical-align:top; }
+table.mt.blk td.rate { text-align:center; vertical-align:middle; } table.mt.blk td.rate small { display:block; color:var(--sub); font-size:11px; }
+table.mt.blk td input { background:#EEF3FA; border-color:#D5DFEC; }
+textarea.memo { width:100%; min-width:200px; font:inherit; font-size:13px; padding:6px 8px; border:1px solid #D5DFEC; border-radius:6px; background:#EEF3FA; resize:vertical; }
+table.mt.wnb td { text-align:left; } table.mt.wnb th.ind { width:150px; }
+.chpick { font-size:13px; color:var(--sub); margin:-6px 0 14px; display:flex; flex-wrap:wrap; gap:10px; align-items:center; }
+.chpick select { font:inherit; padding:2px 6px; border:1px solid var(--line); border-radius:6px; }
