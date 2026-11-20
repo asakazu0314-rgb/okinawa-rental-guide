@@ -147,7 +147,18 @@
       }).join('') + '</tr>';
     }).join('') + '</tbody></table></div>' +
       '<p class="sub">平均間隔＝隣り合うセッション日の差の平均（1回だけの人は「—」）。週あたり回数＝今月回数×7÷' + days + '日。目標ペース＝' + days + '日÷目標回数（何日に1回なら届くか）。●＝実施済み（本日分含む）、○＝これからの予約、数字＝同じ日に複数回。ランクは自動：S＝週3以上（平均間隔2.5日以下）、A＝週2（4.0日以下）、B＝週1（8.0日以下）、C＝週1以下（それより長い・今月1回だけ）、D＝区分が離脱。</p>';
+    // 入力や選択で描き直しても、表示位置（画面と表の横・縦スクロール）が動かないようにする
+    var ft = box.querySelector('.ftable'), sx = ft ? ft.scrollLeft : 0, sy = ft ? ft.scrollTop : 0, wy = window.scrollY;
     box.innerHTML = h;
+    ft = box.querySelector('.ftable'); if (ft) { ft.scrollLeft = sx; ft.scrollTop = sy; }
+    window.scrollTo(window.scrollX, wy);
+  }
+  // 氏名検索は描き直さずに、行の表示／非表示だけ切り替える（入力中に位置もキーボードも動かない）
+  function filterRows() {
+    document.querySelectorAll('#freq tbody tr[data-row]').forEach(function (tr) {
+      var x = last.filter(function (y) { return y.id === tr.dataset.row; })[0];
+      tr.hidden = !!(x && ui.q && x.name.indexOf(ui.q) < 0);
+    });
   }
   function detail(id) {
     var x = last.filter(function (y) { return y.id === id; })[0]; if (!x) return;
@@ -170,7 +181,7 @@
       render(month);
     }
   });
-  document.addEventListener('input', function (e) { if (e.target.id === 'fq') { ui.q = e.target.value.trim(); var pos = e.target.selectionStart; render(month); var q = $('fq'); q.focus(); try { q.setSelectionRange(pos, pos); } catch (er) {} } });
+  document.addEventListener('input', function (e) { if (e.target.id === 'fq') { ui.q = e.target.value.trim(); filterRows(); } });
   document.addEventListener('click', function (e) {
     var t = e.target; if (!t.closest || !t.closest('#freq')) return;
     if (t.id === 'fsortreset') { ui.sort = null; ui.dir = 1; render(month); return; }
