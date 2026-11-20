@@ -4,67 +4,93 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>予実まとめ（試作）</title>
-  <link rel="stylesheet" href="style.css?v=15">
+  <link rel="stylesheet" href="style.css?v=17">
 </head>
 <body>
   <header class="top">
-    <strong>予実まとめ</strong><span class="tag">試作 v2.2</span>
+    <strong>予実まとめ</strong><span class="tag">試作 v2.3</span>
+    <button type="button" class="topbtn" id="reload" hidden>CSVを読み込み直す</button>
   </header>
-  <main>
-    <section class="card" id="step1">
-      <h2>① CSVを読み込む</h2>
-      <p class="sub">Gymsから出した<b>その月1か月分</b>のCSVを3つ、まとめて選びます（種類はアプリが見分けます）。<br>
-      ・<b>予約実行日</b>：予約日時で1日〜今日 → 担当と新規の判定<br>
-      ・<b>セッション日</b>：セッション日付で1日〜末日（今日までの分＋これからの予約）→ 実施済み・予約・着地見込み<br>
-      ・<b>チケット付与日</b>：付与日で1日〜末日 → 入金・新規（新規・更新・追加購入。サプリは除く）<br>
-      新規かどうかは「チケットを買う前に、セッションや予約があったか」で判定し、このiPadが毎月お客様を覚えていきます。違っていたら②の一覧で直せます。<br>
-      <b>CSVはこのiPadの中だけで計算し、どこにも送りません。</b><br>
-      集計はいつも「セッション日付」（実際にトレーニングする日）で行います。「予約日時」（申し込んだ日）は使いません。月の報告には、セッション日付で書き出したCSVを使ってください。</p>
-      <label class="filebtn">CSVを選ぶ<input type="file" id="files" accept=".csv,text/csv" multiple></label>
-      <button type="button" class="ghost" id="demo">架空のデータで試す</button>
-      <p class="sub" id="loaded"></p>
-    </section>
 
-    <section class="card" id="step2" hidden>
-      <h2>② 月と目標</h2>
-      <div class="row monthrow"><span>対象の月</span>
-        <button type="button" class="ghost mini" id="mprev">◀ 前の月</button>
-        <select id="month"></select>
-        <button type="button" class="ghost mini" id="mnext">次の月 ▶</button></div>
-      <p class="sub">今月と先月のCSVを一緒に入れると、ここで切り替えられます。月初めのMTG（第1木曜日）までは、先月が最初に表示されます。</p>
-      <p class="sub">目標は③のMTG資料の表に、週ごとに入れます（このiPadに保存）。入金と新規の実績は、チケット一覧から自動で出します。</p>
-      <div class="tablewrap" hidden><table id="goals"></table></div>
-      <div id="unknown"></div>
-      <div id="late"></div>
-      <p class="sub">セッション数の数え方：ペア・3人のメニューは同じ時間の全員で1本、マンツーマンのメニューは同じ時間でも1人1本（合同トレーニングでも別々）。</p>
-    </section>
-
-    <section class="card" id="stepM" hidden>
-      <h2>③ MTG資料</h2>
-      <div class="row monthrow"><span>表示</span><select id="mstaff"></select>
-        <span>週の区切り</span><select id="mweek"><option value="7">1〜7日／8〜14日…</option><option value="thu">毎週木曜のMT時点</option><option value="mon">月曜はじまり</option></select></div>
-      <div id="mtg"></div>
-    </section>
-
-    <section class="card" id="step3" hidden>
-      <h2>予実カード（トレーナーごと）</h2>
-      <p class="sub" id="asof"></p>
-      <div id="cards"></div>
-    </section>
-
-    <section class="card" id="step4" hidden>
-      <h2>④ MTG報告（コピー用）</h2>
-      <pre id="report"></pre>
+  <!-- 読み込む前：最初の画面 -->
+  <main id="welcome">
+    <section class="card hero" id="step1">
+      <h2>CSVを読み込む</h2>
+      <p class="lead">Driveの「Gym's データ」→「latest」から、<b>3つのファイル</b>をまとめて選びます。</p>
+      <ul class="files3">
+        <li><b>予約実行日</b><span>担当・新規の判定</span></li>
+        <li><b>セッション日</b><span>実施済み・予約・着地見込み</span></li>
+        <li><b>チケット付与日</b><span>入金・新規</span></li>
+      </ul>
       <div class="btns">
-        <button type="button" id="copy">報告文をコピー</button>
-        <button type="button" class="ghost" id="print">印刷・PDF</button>
+        <label class="filebtn">CSVを選ぶ<input type="file" id="files" accept=".csv,text/csv" multiple></label>
+        <button type="button" class="ghost" id="demo">架空のデータで試す</button>
       </div>
-      <p class="sub" id="copymsg"></p>
+      <p class="sub" id="loaded"></p>
+      <p class="note">🔒 CSVはこのiPadの中だけで計算し、どこにも送りません。</p>
     </section>
-
-    <p class="foot">セッション数：ペア・3人コースは同じ時間の全員で1本、マンツーマンは1人1本。同じお客様の重複行は1回。実施済み＝受講済み＋今日の予約（本日分含む）、予約済み＝明日以降の予約中、着地見込み＝実施済み＋予約済み。キャンセルは数えません（ただし前日22:00より後のキャンセルは「消化扱い」で実施に数える。②で外せる）。入金＝その月に付与されたコースのチケットの価格の合計（担当＝そのお客様を一番多く担当しているトレーナー）。新規＝チケットを買う前にセッションの記録がなく、このiPadが前の月に見ていないお客様（②で手直しできる）。<br>計算の決め方は試作です。店の決め方に合わせて直します。</p>
   </main>
-  <script src="app.js?v=18"></script>
-  <script src="mtg.js?v=8"></script>
+
+  <!-- 読み込んだあと：上のバー＋タブ -->
+  <div id="ui" hidden>
+    <div class="toolbar">
+      <div class="tgroup">
+        <button type="button" class="ghost mini" id="mprev" aria-label="前の月">◀</button>
+        <select id="month"></select>
+        <button type="button" class="ghost mini" id="mnext" aria-label="次の月">▶</button>
+      </div>
+      <label class="tgroup"><span>表示</span><select id="mstaff"></select></label>
+      <label class="tgroup"><span>週</span><select id="mweek"><option value="7">1〜7日／8〜14日…</option><option value="thu">毎週木曜のMT時点</option><option value="mon">月曜はじまり</option></select></label>
+    </div>
+    <nav class="tabs" role="tablist">
+      <button type="button" class="tab on" data-tab="stepM">MTG資料</button>
+      <button type="button" class="tab" data-tab="step3">予実カード</button>
+      <button type="button" class="tab" data-tab="step2">確認・修正<span class="badge" id="fixbadge" hidden></span></button>
+      <button type="button" class="tab" data-tab="step4">報告文</button>
+    </nav>
+
+    <main>
+      <section class="card panel" id="stepM" hidden>
+        <div id="mtg"></div>
+      </section>
+
+      <section class="card panel" id="step3" hidden>
+        <p class="sub" id="asof"></p>
+        <div id="cards"></div>
+      </section>
+
+      <section class="card panel" id="step2" hidden>
+        <h2>確認・修正</h2>
+        <p class="sub">自動の判定が違うときだけ直します。直した内容はこのiPadに保存され、次の月も使われます。</p>
+        <div class="tablewrap" hidden><table id="goals"></table></div>
+        <div id="unknown"></div>
+        <div id="late"></div>
+        <details class="rules">
+          <summary>計算のルール</summary>
+          <ul>
+            <li><b>セッション数</b>：ペア・3人のメニューは同じ時間の全員で1本、マンツーマンは同じ時間でも1人1本。同じ人の重複行は1回。</li>
+            <li><b>実施済み</b>＝受講済み＋今日の予約（本日分含む）。<b>着地見込み</b>＝実施済み＋これからの予約。</li>
+            <li><b>キャンセル</b>は数えない。ただし前日22:00より後のキャンセルは「消化扱い」で実施に数える（事情があるものは上の一覧で外す）。</li>
+            <li><b>入金</b>＝その月に付与されたコースのチケットの価格の合計（新規・更新・追加購入。サプリは除く）。担当＝そのお客様を一番多く担当しているトレーナー。</li>
+            <li><b>新規</b>＝チケットを買う前にセッション・予約の記録がなく、このiPadが前の月に見ていないお客様。</li>
+            <li>集計はいつも「セッション日付」で行う（「予約日時」は担当・新規の判定だけに使う）。</li>
+          </ul>
+        </details>
+      </section>
+
+      <section class="card panel" id="step4" hidden>
+        <h2>MTG報告（コピー用）</h2>
+        <pre id="report"></pre>
+        <div class="btns">
+          <button type="button" id="copy">報告文をコピー</button>
+          <button type="button" class="ghost" id="print">印刷・PDF</button>
+        </div>
+        <p class="sub" id="copymsg"></p>
+      </section>
+    </main>
+  </div>
+  <script src="app.js?v=19"></script>
+  <script src="mtg.js?v=9"></script>
+  <script src="ui.js?v=1"></script>
 </body>
 </html>

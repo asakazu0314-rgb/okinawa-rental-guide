@@ -277,6 +277,7 @@
     renderLate(month);
     $('report').textContent = report(month, st, pr, tot, tg);
     if (window.renderMTG) window.renderMTG(month);
+    if (window.UI) window.UI.refresh();
   }
   function line(name, s, g, P) {
     var out = '■' + name + '\n' +
@@ -351,7 +352,7 @@
     var pick = now.getDate() <= firstThu && ms.indexOf(prev) >= 0 ? prev : ms.indexOf(cur) >= 0 ? cur : ms[ms.length - 1];
     $('month').innerHTML = ms.map(function (m) { return '<option value="' + m + '"' + (m === pick ? ' selected' : '') + '>' + m.replace('-', '年') + '月' + (m === cur ? '（今月）' : m === prev ? '（先月）' : '') + '</option>'; }).join('');
     updateMonthButtons();
-    ['step2', 'stepM', 'step3', 'step4'].forEach(function (id) { $(id).hidden = false; });
+    if (window.UI) window.UI.show(); else ['step2', 'stepM', 'step3', 'step4'].forEach(function (id) { $(id).hidden = false; });
     renderGoals($('month').value); render();
   }
 

@@ -180,7 +180,13 @@
       return '<h3 class="mh">■' + title + (sub ? '<small>' + sub + '</small>' : '') + '</h3><div class="tablewrap">' +
         ps.map(function (p) { cur = p.id; return '<div data-staff="' + esc(p.id) + '">' + fn(p.name, data[p.id]) + '</div>'; }).join('') + '</div>';
     }
-    var h = '';
+    // 一番上のまとめ（表示している人の合計）
+    var tP = 0, tD = 0, tL = 0, tN = 0, tC = 0, tPG = 0, tSG = 0;
+    ps.forEach(function (p) { var d = data[p.id], o = gobj(p.id); tP += has(o.payLand) ? +o.payLand : sum(d.P); tD += sum(d.SE.done); tL += d.SE.land; tN += sum(d.NM.a); tC += sum(d.CO.done); tPG += sum(o.W.pay || []); tSG += sum(o.W.sess || []); });
+    function tile(lbl, val, sub, g, v) { return '<div class="tile"><span class="tl">' + lbl + '</span><span class="tv">' + val + '</span><span class="ts">' + sub + (g ? '　<b class="' + cls(v, g) + '">' + pctS(v, g) + '</b>' : '') + '</span></div>'; }
+    var h = '<div class="tiles">' + tile('入金（月末着地予定）', yen(tP), tPG ? '目標 ' + yen(tPG) : '目標 未入力', tPG, tP) +
+      tile('セッション 着地見込み', tL + '<small>本</small>', '実施済み ' + tD + '本' + (tSG ? '・目標 ' + tSG : ''), tSG, tL) +
+      tile('入会', tN + '<small>件</small>', '今月', 0, 0) + tile('カウンセリング対応', tC + '<small>件</small>', '今月（済）', 0, 0) + '</div>';
     h += sec('入金売上', '', function (nm, d) { return blockGoal(nm, W, 'pay', yen, d.P, null, true, 'payNote'); });
     h += sec('セッション数', '実数値＝MT時点までに終わった分（本日分を含む）。月末着地予定＝実数値＋これからの予約', function (nm, d) { return blockGoal(nm, W, 'sess', String, d.SE.done, d.SE.land, false, 'sessNote'); });
     h += sec('入会目標及び実数値', '新規獲得目標件数と、達成するための行動も備考に記載', function (nm, d) { return blockNew(nm, W, d.NM); });
