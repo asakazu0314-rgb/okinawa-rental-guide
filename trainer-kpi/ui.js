@@ -1,7 +1,7 @@
 // 画面の切り替え（タブ）と、読み込み直しボタン
 (function () {
   var $ = function (id) { return document.getElementById(id); };
-  var panels = ['stepM', 'step3', 'step2', 'step4'];
+  var panels = ['stepM', 'stepF', 'step3', 'step2', 'step4'];
   function get() { try { return localStorage.getItem('kpi-tab') || 'stepM'; } catch (e) { return 'stepM'; } }
   function set(t) { try { localStorage.setItem('kpi-tab', t); } catch (e) {} }
   function open(t) {

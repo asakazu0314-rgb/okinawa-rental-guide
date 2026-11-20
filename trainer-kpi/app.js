@@ -7,6 +7,7 @@
   var rows = [];
   var fileNotes = [];  // 読み込んだファイルごとのメモ（期間など）
   var tickets = [];    // チケット一覧（入金・新規の計算に使う）
+  var files = [];      // 読み込んだファイル（名前・種類・件数・月）
   var $ = function (id) { return document.getElementById(id); };
 
   // 日付の形をそろえる（2026/11/2 9:00 → 2026-11-02 09:00、T区切りも同じに）。ファイルごとに形が違っても比べられるように
@@ -85,6 +86,8 @@
     });
     var ds = body.map(function (c) { return nd(c[idx.date]).slice(0, 10); }).filter(Boolean).sort();
     var bs = idx.booked >= 0 ? body.map(function (c) { return nd(c[idx.booked]).slice(0, 10); }).filter(Boolean).sort() : [];
+    var fm = {}; ds.forEach(function (x) { fm[x.slice(0, 7)] = (fm[x.slice(0, 7)] || 0) + 1; });
+    files.push({ name: name, src: src, rows: body.length, months: fm });
     fileNotes.push(src === 'booking'
       ? name + '：予約実行日のファイル（予約日 ' + bs[0] + '〜' + bs[bs.length - 1] + '、' + body.length + '行）→ 担当と新規の判定に使います'
       : name + '：セッション日のファイル（セッション日付 ' + ds[0] + '〜' + ds[ds.length - 1] + '、' + body.length + '行）→ セッション数に使います');
@@ -277,6 +280,7 @@
     renderLate(month);
     $('report').textContent = report(month, st, pr, tot, tg);
     if (window.renderMTG) window.renderMTG(month);
+    if (window.renderFreq) window.renderFreq(month);
     if (window.UI) window.UI.refresh();
   }
   function line(name, s, g, P) {
@@ -359,6 +363,8 @@
   // ---- 操作 ----
   $('files').addEventListener('change', function (e) {
     var fs = Array.prototype.slice.call(e.target.files), left = fs.length;
+    if (!fs.length) return;
+    rows = []; tickets = []; fileNotes = []; files = []; // 取り込み直したら、前のデータは使わない（古い状態が残らないように）
     fs.forEach(function (f) {
       var rd = new FileReader();
       rd.onload = function () { addCSV(rd.result, f.name); if (!--left) afterLoad(); };
@@ -369,7 +375,7 @@
   $('demo').addEventListener('click', function () {
     Promise.all(['demo-a.csv', 'demo-b.csv', 'demo-c.csv', 'demo-tickets.csv?v=2'].map(function (u) { return fetch(u).then(function (r) { return r.text(); }); }))
       .then(function (ts) {
-        rows = []; fileNotes = []; tickets = []; ts.forEach(function (t, i) { addCSV(t, 'demo' + i); });
+        rows = []; fileNotes = []; tickets = []; files = []; ts.forEach(function (t, i) { addCSV(t, 'demo' + i); });
         // 架空の目標（試す用）
         var m = '2026-11';
         if (!goals[m] || (goals[m].S01 && goals[m].S01.pay == null)) { goals[m] = { S01: { sess: 160, pay: 400000, newGoal: 2 }, S02: { sess: 110, pay: 300000, newGoal: 2 }, S03: { sess: 90, pay: 250000, newGoal: 1 } }; saveGoals(goals); }
@@ -420,7 +426,7 @@
   $('print').addEventListener('click', function () { window.print(); });
   // MTG資料（mtg.js）から使う部品
   window.KPI = {
-    get rows() { return rows; }, get tickets() { return tickets; }, get goals() { return goals; },
+    get rows() { return rows; }, get files() { return files; }, month: function () { return $('month').value; }, get tickets() { return tickets; }, get goals() { return goals; },
     DONE: DONE, BOOKED: BOOKED, CANCEL: CANCEL, EXCL: EXCL,
     countSlots: countSlots, today: today, useSrc: function (m) { return !!useSrc[m]; },
     isCourse: isCourse, isConsumed: isConsumed, isNewTicket: isNewTicket, ownerOf: ownerOf, owners: function () { return owners; },

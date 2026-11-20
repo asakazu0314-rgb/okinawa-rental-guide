@@ -4,11 +4,11 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>予実まとめ（試作）</title>
-  <link rel="stylesheet" href="style.css?v=17">
+  <link rel="stylesheet" href="style.css?v=19">
 </head>
 <body>
   <header class="top">
-    <strong>予実まとめ</strong><span class="tag">試作 v2.3</span>
+    <strong>予実まとめ</strong><span class="tag">試作 v2.4</span>
     <button type="button" class="topbtn" id="reload" hidden>CSVを読み込み直す</button>
   </header>
 
@@ -44,6 +44,7 @@
     </div>
     <nav class="tabs" role="tablist">
       <button type="button" class="tab on" data-tab="stepM">MTG資料</button>
+      <button type="button" class="tab" data-tab="stepF">セッション頻度表</button>
       <button type="button" class="tab" data-tab="step3">予実カード</button>
       <button type="button" class="tab" data-tab="step2">確認・修正<span class="badge" id="fixbadge" hidden></span></button>
       <button type="button" class="tab" data-tab="step4">報告文</button>
@@ -52,6 +53,11 @@
     <main>
       <section class="card panel" id="stepM" hidden>
         <div id="mtg"></div>
+      </section>
+
+      <section class="card panel" id="stepF" hidden>
+        <h2>セッション頻度表</h2>
+        <div id="freq"></div>
       </section>
 
       <section class="card panel" id="step3" hidden>
@@ -89,8 +95,9 @@
       </section>
     </main>
   </div>
-  <script src="app.js?v=19"></script>
+  <script src="app.js?v=20"></script>
   <script src="mtg.js?v=9"></script>
-  <script src="ui.js?v=1"></script>
+  <script src="freq.js?v=1"></script>
+  <script src="ui.js?v=2"></script>
 </body>
 </html>
