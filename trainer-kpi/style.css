@@ -168,3 +168,14 @@ table.ft.small { min-width:0; width:100%; margin-bottom:12px; }
 table.ft select.rk-sel { border:none; font-weight:800; }
 table.ft select.rk-SS { background:#F4B400; color:#3A2A00; } table.ft select.rk-S { background:#F28B82; color:#4A0F0A; } table.ft select.rk-A { background:#81C995; color:#0B3B1C; }
 table.ft select.rk-B { background:#8AB4F8; color:#0B2A5B; } table.ft select.rk-C { background:#D7AEFB; color:#3B0F5C; } table.ft select.rk-none { background:#E8EAED; color:#5F6368; }
+
+/* 頻度表 v2.5：ランク自動・セッション日を横軸に */
+.rk-D { background:#5F6368; color:#fff; }
+.rk.rkbig { display:inline-block; min-width:28px; text-align:center; font-size:13px; padding:3px 8px; }
+table.ft th.dc, table.ft td.dc { min-width:24px; width:24px; padding:4px 2px; text-align:center; }
+table.ft thead th.dc small { display:block; font-size:10px; font-weight:400; color:var(--sub); }
+table.ft .sat { background:#F2F6FC; } table.ft .sun { background:#FCF2F2; }
+table.ft thead th.sat { background:#DCE5F0; } table.ft thead th.sun { background:#F0DCDC; }
+table.ft .wkstart { border-left:2px solid #C9D0D6; }
+.dot { display:inline-grid; place-items:center; width:16px; height:16px; border-radius:50%; background:var(--main); color:#fff; font-size:10px; font-weight:700; }
+.dot.bk { background:#fff; border:2px solid var(--main); color:var(--main); width:14px; height:14px; }
