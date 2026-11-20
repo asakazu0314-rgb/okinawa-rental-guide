@@ -12,8 +12,8 @@
   function S(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
   var channels = L('kpi-channel', {});   // チケットID → 流入経路（入会）
   var counsel = L('kpi-counsel', {});    // 月 → [{id, date, staff, ch, st:'予定'|'済'}]
-  var cfg = L('kpi-mtgcfg', { week: 'thu', staff: '' });
-  if (!cfg.weekSet) cfg.week = 'thu';    // 店のMT（毎週木曜）区切りが初期
+  var cfg = L('kpi-mtgcfg', { week: '7', staff: '' });
+  if (!cfg.weekSet) cfg.week = '7';      // 報告は月初から7日区切り（オーナー決定 2026-11-20）。画面で木曜MT区切りにも切り替え可
   var month = '', cur = '';              // cur＝今描いているトレーナー
   var I5 = [0, 1, 2, 3, 4];
 
