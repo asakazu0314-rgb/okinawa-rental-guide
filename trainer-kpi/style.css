@@ -179,3 +179,4 @@ table.ft thead th.sat { background:#DCE5F0; } table.ft thead th.sun { background
 table.ft .wkstart { border-left:2px solid #C9D0D6; }
 .dot { display:inline-grid; place-items:center; width:16px; height:16px; border-radius:50%; background:var(--main); color:#fff; font-size:10px; font-weight:700; }
 .dot.bk { background:#fff; border:2px solid var(--main); color:var(--main); width:14px; height:14px; }
+.langbtn { margin-left:8px; } .top .topbtn:first-of-type { margin-left:auto; }
