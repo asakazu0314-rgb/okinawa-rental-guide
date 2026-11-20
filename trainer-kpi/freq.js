@@ -117,7 +117,7 @@
       '<div class="tile"><span class="tl">合計セッション数</span><span class="tv">' + total + '</span></div>' +
       '<div class="tile"><span class="tl">週2ペース以上（平均4.0日以下）</span><span class="tv">' + two + '<small>人</small></span></div>' +
       '<div class="tile"><span class="tl">週1ペース（4.0〜8.0日）</span><span class="tv">' + one + '<small>人</small></span></div>' +
-      '<div class="tile rtile"><span class="tl">ランク別人数</span><span class="rks">' + RANK.map(function (r) { return '<span class="rk rk-' + r + '" title="' + RANKDEF[r] + '">' + r + ' ' + rankN[r] + '</span>'; }).join('') + '</span></div></div>';
+      '<div class="tile rtile"><span class="tl">ランク別人数</span><span class="rks" id="frks">' + rankChips(rankN) + '</span></div></div>';
     h += '<div class="fcontrols"><input type="search" id="fq" placeholder="氏名で検索" value="' + esc(ui.q) + '"><select id="fk"><option value="">区分：すべて</option>' +
       KBN.map(function (k) { return '<option' + (ui.kbn === k ? ' selected' : '') + '>' + k + '</option>'; }).join('') + '</select>' +
       (ui.sort ? '<button type="button" class="ghost mini" id="fsortreset">並びを初期に戻す</button>' : '') + '<span class="sub">見出しを押すと並び替え。行を押すと詳細。</span></div>';
@@ -143,7 +143,7 @@
         var k = c[0];
         if (k === 'days') return DAYS.map(function (d) { var b = x.byDay[d]; return '<td class="' + dayCls(d) + '">' + (b ? '<span class="dot' + (b.done ? '' : ' bk') + '">' + (b.n > 1 ? b.n : '') + '</span>' : '') + '</td>'; }).join('');
         var v = k[0] === 'w' && k.length === 2 ? (x.wk[+k[1]] || '') : td[k];
-        return '<td class="' + (i < 2 ? 'stk' + i : '') + '">' + v + '</td>';
+        return '<td data-k="' + k + '" class="' + (i < 2 ? 'stk' + i : '') + '">' + v + '</td>';
       }).join('') + '</tr>';
     }).join('') + '</tbody></table></div>' +
       '<p class="sub">平均間隔＝隣り合うセッション日の差の平均（1回だけの人は「—」）。週あたり回数＝今月回数×7÷' + days + '日。目標ペース＝' + days + '日÷目標回数（何日に1回なら届くか）。●＝実施済み（本日分含む）、○＝これからの予約、数字＝同じ日に複数回。ランクは自動：S＝週3以上（平均間隔2.5日以下）、A＝週2（4.0日以下）、B＝週1（8.0日以下）、C＝週1以下（それより長い・今月1回だけ）、D＝区分が離脱。</p>';
@@ -154,6 +154,18 @@
     window.scrollTo(window.scrollX, wy);
   }
   // 氏名検索は描き直さずに、行の表示／非表示だけ切り替える（入力中に位置もキーボードも動かない）
+  function rankChips(rankN) { return RANK.map(function (r) { return '<span class="rk rk-' + r + '" title="' + RANKDEF[r] + '">' + r + ' ' + (rankN[r] || 0) + '</span>'; }).join(''); }
+  // 目標・区分を変えたときは、表を描き直さずに、その行のセルとランクの人数だけ書き換える（表示位置が動かない）
+  function updateRow(id) {
+    var x = last.filter(function (y) { return y.id === id; })[0], tr = document.querySelector('#freq tr[data-row="' + id + '"]'); if (!x || !tr) return;
+    var st = setting(id), g = (st.goal || {})[month], days = daysIn(month);
+    x.kbn = st.kbn || '既存'; x.rank = autoRank(x.kbn, x.gap);
+    x.goal = g != null && g !== '' ? +g : null; x.remain = x.goal != null ? Math.max(0, x.goal - x.count) : null; x.pace = x.goal ? days / x.goal : null;
+    function cell(k, html) { var td = tr.querySelector('td[data-k="' + k + '"]'); if (td) td.innerHTML = html; }
+    cell('rank', '<span class="rk rkbig rk-' + x.rank + '" title="' + RANKDEF[x.rank] + '">' + x.rank + '</span>');
+    cell('remain', x.remain != null ? x.remain : '—'); cell('pace', x.pace != null ? x.pace.toFixed(2) : '—');
+    var n = {}; last.forEach(function (y) { n[y.rank] = (n[y.rank] || 0) + 1; }); var rk = $('frks'); if (rk) rk.innerHTML = rankChips(n);
+  }
   function filterRows() {
     document.querySelectorAll('#freq tbody tr[data-row]').forEach(function (tr) {
       var x = last.filter(function (y) { return y.id === tr.dataset.row; })[0];
@@ -178,7 +190,7 @@
       var id = t.dataset.id;
       if (t.dataset.set === 'goal') { var st = setting(id), g = st.goal || {}; if (t.value === '') delete g[month]; else g[month] = +t.value; save(id, 'goal', g); }
       else save(id, t.dataset.set, t.value);
-      render(month);
+      updateRow(id);
     }
   });
   document.addEventListener('input', function (e) { if (e.target.id === 'fq') { ui.q = e.target.value.trim(); filterRows(); } });
