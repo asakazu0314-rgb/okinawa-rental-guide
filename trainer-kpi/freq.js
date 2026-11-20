@@ -52,6 +52,7 @@
       var c = byC[id];
       c.rows.sort(function (a, b) { return (a.start || a.date) < (b.start || b.date) ? -1 : 1; });
       var dates = c.rows.map(function (r) { return r.date; }), wk = [0, 0, 0, 0, 0];
+      var doneN = c.rows.filter(function (r) { return r.st === K.DONE || r.date <= today; }).length; // 実施済み（本日分含む）
       dates.forEach(function (d) { wk[Math.min(4, Math.floor((+d.slice(8, 10) - 1) / 7))]++; });
       var gap = avgGap(dates), pd = (prevBy[id] || []).slice().sort(), pg = avgGap(pd);
       var trend = '';
@@ -62,7 +63,8 @@
         id: id, name: c.name, rows: c.rows, dates: dates, count: dates.length, wk: wk, gap: gap, perWeek: dates.length * 7 / days,
         prevGap: pg, trend: trend, next: next[id] || '', kbn: st.kbn || '既存', rank: autoRank(st.kbn || '既存', gap), byDay: byDay,
         goal: goal != null && goal !== '' ? +goal : null,
-        remain: goal != null && goal !== '' ? Math.max(0, +goal - dates.length) : null,
+        doneN: doneN, bookN: dates.length - doneN,
+        remain: goal != null && goal !== '' ? Math.max(0, +goal - doneN) : null, // 残り＝目標（月の回数）−実施済み
         pace: goal ? days / +goal : null
       };
     }).concat([]).filter(Boolean).map(function (x) { x.hasPrev = hasPrev; return x; });
@@ -137,7 +139,7 @@
         trend: x.trend ? '<span class="tr tr-' + (x.trend === '頻度UP' ? 'up' : x.trend === '頻度DOWN' ? 'down' : 'flat') + '">' + x.trend + '</span>' : '—',
         next: x.next ? +x.next.slice(5, 7) + '/' + +x.next.slice(8, 10) : '<span class="dim2">未予約</span>',
         goal: '<input type="number" inputmode="numeric" min="0" data-set="goal" data-id="' + esc(x.id) + '" value="' + (x.goal != null ? x.goal : '') + '">',
-        remain: x.remain != null ? x.remain : '—', pace: x.pace != null ? x.pace.toFixed(2) : '—'
+        remain: remainHtml(x), pace: x.pace != null ? x.pace.toFixed(2) : '—'
       };
       return '<tr data-row="' + esc(x.id) + '">' + cols.map(function (c, i) {
         var k = c[0];
@@ -146,7 +148,7 @@
         return '<td data-k="' + k + '" class="' + (i < 2 ? 'stk' + i : '') + '">' + v + '</td>';
       }).join('') + '</tr>';
     }).join('') + '</tbody></table></div>' +
-      '<p class="sub">平均間隔＝隣り合うセッション日の差の平均（1回だけの人は「—」）。週あたり回数＝今月回数×7÷' + days + '日。目標ペース＝' + days + '日÷目標回数（何日に1回なら届くか）。●＝実施済み（本日分含む）、○＝これからの予約、数字＝同じ日に複数回。ランクは自動：S＝週3以上（平均間隔2.5日以下）、A＝週2（4.0日以下）、B＝週1（8.0日以下）、C＝週1以下（それより長い・今月1回だけ）、D＝区分が離脱。</p>';
+      '<p class="sub">平均間隔＝隣り合うセッション日の差の平均（1回だけの人は「—」）。週あたり回数＝今月回数×7÷' + days + '日。残り＝目標回数−実施済み（本日分含む）。目標ペース＝' + days + '日÷目標回数（何日に1回なら届くか）。●＝実施済み（本日分含む）、○＝これからの予約、数字＝同じ日に複数回。ランクは自動：S＝週3以上（平均間隔2.5日以下）、A＝週2（4.0日以下）、B＝週1（8.0日以下）、C＝週1以下（それより長い・今月1回だけ）、D＝区分が離脱。</p>';
     // 入力や選択で描き直しても、表示位置（画面と表の横・縦スクロール）が動かないようにする
     var ft = box.querySelector('.ftable'), sx = ft ? ft.scrollLeft : 0, sy = ft ? ft.scrollTop : 0, wy = window.scrollY;
     box.innerHTML = h;
@@ -154,16 +156,22 @@
     window.scrollTo(window.scrollX, wy);
   }
   // 氏名検索は描き直さずに、行の表示／非表示だけ切り替える（入力中に位置もキーボードも動かない）
+  // 残り＝目標（月の回数）−実施済み。予約が入っている分と、まだ予約のない分も小さく出す
+  function remainHtml(x) {
+    if (x.remain == null) return '—';
+    var bk = Math.min(x.bookN, x.remain), need = x.remain - bk;
+    return '<b>' + x.remain + '</b>' + (x.remain ? '<small class="hint">予約あり ' + bk + '・未予約 ' + need + '</small>' : '');
+  }
   function rankChips(rankN) { return RANK.map(function (r) { return '<span class="rk rk-' + r + '" title="' + RANKDEF[r] + '">' + r + ' ' + (rankN[r] || 0) + '</span>'; }).join(''); }
   // 目標・区分を変えたときは、表を描き直さずに、その行のセルとランクの人数だけ書き換える（表示位置が動かない）
   function updateRow(id) {
     var x = last.filter(function (y) { return y.id === id; })[0], tr = document.querySelector('#freq tr[data-row="' + id + '"]'); if (!x || !tr) return;
     var st = setting(id), g = (st.goal || {})[month], days = daysIn(month);
     x.kbn = st.kbn || '既存'; x.rank = autoRank(x.kbn, x.gap);
-    x.goal = g != null && g !== '' ? +g : null; x.remain = x.goal != null ? Math.max(0, x.goal - x.count) : null; x.pace = x.goal ? days / x.goal : null;
+    x.goal = g != null && g !== '' ? +g : null; x.remain = x.goal != null ? Math.max(0, x.goal - x.doneN) : null; x.pace = x.goal ? days / x.goal : null;
     function cell(k, html) { var td = tr.querySelector('td[data-k="' + k + '"]'); if (td) td.innerHTML = html; }
     cell('rank', '<span class="rk rkbig rk-' + x.rank + '" title="' + RANKDEF[x.rank] + '">' + x.rank + '</span>');
-    cell('remain', x.remain != null ? x.remain : '—'); cell('pace', x.pace != null ? x.pace.toFixed(2) : '—');
+    cell('remain', remainHtml(x)); cell('pace', x.pace != null ? x.pace.toFixed(2) : '—');
     var n = {}; last.forEach(function (y) { n[y.rank] = (n[y.rank] || 0) + 1; }); var rk = $('frks'); if (rk) rk.innerHTML = rankChips(n);
   }
   function filterRows() {
