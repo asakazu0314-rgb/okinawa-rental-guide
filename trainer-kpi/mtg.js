@@ -125,16 +125,28 @@
       '<tr><th class="ind">月末着地予定</th>' + I5.map(function () { return '<td></td>'; }).join('') + '<td class="land">' +
       (landEditable ? num(o[key + 'Land'], 'data-l="' + key + 'Land" placeholder="' + at + '"') : '<b>' + fmt(land) + '</b>') + '</td></tr></table>';
   }
+  // 入会：流入経路ごと・週ごとに「目標（組）」と「実数値（組）」を手入力。合計・達成率は自動
+  function newTot(o) {
+    var N = o.NG || {}, g = [0, 0, 0, 0, 0], a = [0, 0, 0, 0, 0], anyA = false, anyG = false;
+    CH.forEach(function (c) { var x = N[c] || {}; I5.forEach(function (i) { var gv = (x.g || [])[i], av = (x.a || [])[i]; if (has(gv)) { g[i] += +gv; anyG = true; } if (has(av)) { a[i] += +av; anyA = true; } }); });
+    return { g: g, a: a, gt: anyG ? sum(g) : (has(o.newGoal) ? +o.newGoal : 0), at: sum(a), anyA: anyA };
+  }
   function blockNew(name, W, NM) {
-    var o = gobj(cur), ng = o.newGoal, keys = CH.concat(NM.byCh['未設定'] ? ['未設定'] : []);
-    return '<table class="mt blk">' + head(name, W, '<th>当月新規目標</th>') + '<th>達成率</th><th class="nc">備考</th></tr>' +
-      '<tr class="act"><th class="ind">合計</th><td>' + num(ng, 'data-f="newGoal"') + '</td>' + NM.a.map(function (v, i) { return '<td>' + (W[i] ? v : '') + '</td>'; }).join('') +
-      '<td><b>' + sum(NM.a) + '</b></td><td rowspan="' + (keys.length + 1) + '" class="rate"><b class="' + cls(sum(NM.a), +ng) + '">' + pctS(sum(NM.a), +ng) + '</b></td><td rowspan="' + (keys.length + 1) + '" class="nc">' + memo('newNote', 6) + '</td></tr>' +
-      keys.map(function (c) { var a = NM.byCh[c] || [0, 0, 0, 0, 0]; return '<tr' + (c === '未設定' ? ' class="warnrow"' : '') + '><th class="ind">' + c + '</th><td></td>' + a.map(function (v, i) { return '<td>' + (W[i] && v ? v : '') + '</td>'; }).join('') + '<td>' + sum(a) + '</td></tr>'; }).join('') +
-      '</table>' + (NM.list.length ? '<div class="chpick">入会の流入経路：' + NM.list.map(function (k) {
-        return '<label>' + esc(k.date.slice(5).replace('-', '/')) + ' ' + esc(k.custName || k.cust) + ' <select data-ch="' + esc(k.id) + '"><option value="">未設定</option>' +
-          CH.map(function (c) { return '<option' + (channels[k.id] === c ? ' selected' : '') + '>' + c + '</option>'; }).join('') + '</select></label>';
-      }).join('') + '</div>' : '');
+    var o = gobj(cur), N = o.NG || {}, T = newTot(o), rs = CH.length * 2 + 2;
+    function inp(c, k, i) { return num(((N[c] || {})[k] || [])[i], 'data-ng="' + esc(c) + '" data-k="' + k + '" data-i="' + i + '"'); }
+    var h = '<table class="mt blk ngt">' + head(name, W, '<th></th>') + '<th>達成率</th><th class="nc">備考</th></tr>' +
+      '<tr class="ngsum"><th class="ind" rowspan="2">合計</th><td class="ngk">目標</td>' + T.g.map(function (v, i) { return '<td>' + (W[i] ? v : '') + '</td>'; }).join('') + '<td><b>' + T.gt + '</b></td>' +
+      '<td rowspan="' + rs + '" class="rate"><b class="' + cls(T.at, T.gt) + '">' + pctS(T.at, T.gt) + '</b><small>実数値÷目標</small></td><td rowspan="' + rs + '" class="nc">' + memo('newNote', 10) + '</td></tr>' +
+      '<tr class="act ngsum"><td class="ngk">実数値</td>' + T.a.map(function (v, i) { return '<td>' + (W[i] ? '<b>' + v + '</b>' : '') + '</td>'; }).join('') + '<td><b>' + T.at + '</b></td></tr>';
+    CH.forEach(function (c) {
+      var x = N[c] || {};
+      h += '<tr class="ngrow"><th class="ind" rowspan="2">' + c + '</th><td class="ngk">目標</td>' + I5.map(function (i) { return '<td>' + (W[i] ? inp(c, 'g', i) : '') + '</td>'; }).join('') + '<td>' + sum(x.g || []) + '</td></tr>' +
+        '<tr class="act"><td class="ngk">実数値</td>' + I5.map(function (i) { return '<td>' + (W[i] ? inp(c, 'a', i) : '') + '</td>'; }).join('') + '<td><b>' + sum(x.a || []) + '</b></td></tr>';
+    });
+    h += '</table>';
+    var auto = sum(NM.a);
+    h += '<p class="sub ngref">参考（CSVからの自動判定）：新規チケット ' + auto + '件' + (NM.list.length ? '（' + NM.list.map(function (k) { return esc(k.date.slice(5).replace('-', '/')) + ' ' + esc(k.custName || k.cust); }).join('、') + '）' : '') + '。実数値は手入力の数字を使います。</p>';
+    return h;
   }
   function blockCounsel(name, W, CO) {
     return '<table class="mt blk">' + head(name, W) + '<th class="nc">備考</th></tr>' +
@@ -181,12 +193,12 @@
         ps.map(function (p) { cur = p.id; return '<div data-staff="' + esc(p.id) + '">' + fn(p.name, data[p.id]) + '</div>'; }).join('') + '</div>';
     }
     // 一番上のまとめ（表示している人の合計）
-    var tP = 0, tD = 0, tL = 0, tN = 0, tC = 0, tPG = 0, tSG = 0;
-    ps.forEach(function (p) { var d = data[p.id], o = gobj(p.id); tP += has(o.payLand) ? +o.payLand : sum(d.P); tD += sum(d.SE.done); tL += d.SE.land; tN += sum(d.NM.a); tC += sum(d.CO.done); tPG += sum(o.W.pay || []); tSG += sum(o.W.sess || []); });
+    var tP = 0, tD = 0, tL = 0, tN = 0, tNG = 0, tC = 0, tPG = 0, tSG = 0;
+    ps.forEach(function (p) { var d = data[p.id], o = gobj(p.id); tP += has(o.payLand) ? +o.payLand : sum(d.P); tD += sum(d.SE.done); tL += d.SE.land; var nt = newTot(o); tN += nt.at; tNG += nt.gt; tC += sum(d.CO.done); tPG += sum(o.W.pay || []); tSG += sum(o.W.sess || []); });
     function tile(lbl, val, sub, g, v) { return '<div class="tile"><span class="tl">' + lbl + '</span><span class="tv">' + val + '</span><span class="ts">' + sub + (g ? '　<b class="' + cls(v, g) + '">' + pctS(v, g) + '</b>' : '') + '</span></div>'; }
     var h = '<div class="tiles">' + tile('入金（月末着地予定）', yen(tP), tPG ? '目標 ' + yen(tPG) : '目標 未入力', tPG, tP) +
       tile('セッション 着地見込み', tL + '<small>本</small>', '実施済み ' + tD + '本' + (tSG ? '・目標 ' + tSG : ''), tSG, tL) +
-      tile('入会', tN + '<small>件</small>', '今月', 0, 0) + tile('カウンセリング対応', tC + '<small>件</small>', '今月（済）', 0, 0) + '</div>';
+      tile('入会（実数値）', tN + '<small>組</small>', tNG ? '目標 ' + tNG + '組' : '目標 未入力', tNG, tN) + tile('カウンセリング対応', tC + '<small>件</small>', '今月（済）', 0, 0) + '</div>';
     h += sec('入金売上', '', function (nm, d) { return blockGoal(nm, W, 'pay', yen, d.P, null, true, 'payNote'); });
     h += sec('セッション数', '実数値＝MT時点までに終わった分（本日分を含む）。月末着地予定＝実数値＋これからの予約', function (nm, d) { return blockGoal(nm, W, 'sess', String, d.SE.done, d.SE.land, false, 'sessNote'); });
     h += sec('入会目標及び実数値', '新規獲得目標件数と、達成するための行動も備考に記載', function (nm, d) { return blockNew(nm, W, d.NM); });
@@ -224,7 +236,8 @@
     if (o.payNote) out += '　備考：' + o.payNote + '\n';
     out += '■セッション数　実数値 ' + row(d.SE.done, String) + '／合計 ' + sum(d.SE.done) + '　月末着地予定 ' + d.SE.land + (sg ? '（目標 ' + sg + '・' + pctS(d.SE.land, sg) + '）' : '') + '\n';
     if (o.sessNote) out += '　備考：' + o.sessNote + '\n';
-    out += '■入会 ' + sum(d.NM.a) + '件' + (has(o.newGoal) ? '（当月新規目標 ' + o.newGoal + '・' + pctS(sum(d.NM.a), +o.newGoal) + '）' : '') + chLine(d.NM.byCh) + '\n';
+    var nt = newTot(o), ngl = CH.filter(function (c) { var x = (o.NG || {})[c] || {}; return sum(x.g || []) || sum(x.a || []); }).map(function (c) { var x = o.NG[c]; return c + ' ' + sum(x.a || []) + '/' + sum(x.g || []); });
+    out += '■入会 ' + nt.at + '組' + (nt.gt ? '（目標 ' + nt.gt + '組・' + pctS(nt.at, nt.gt) + '）' : '') + (ngl.length ? '（実数/目標：' + ngl.join('、') + '）' : '') + '\n';
     if (o.newNote) out += '　備考：' + o.newNote + '\n';
     out += '■カウンセリング対応数 ' + sum(d.CO.done) + '件' + chLine(d.CO.byCh) + '／今後予定 ' + sum(d.CO.plan) + '件\n';
     if (gi) { var net = gi.total - (+((o.after || [])[ti]) || 0), one = net - gi.two; out += '■セッション頻度　稼働 ' + gi.total + '組・アフター抜き ' + net + '・週2 ' + gi.two + '・週1 ' + one + '・セッション数 ' + sessFormula(gi.two, one) + '\n'; }
@@ -235,12 +248,14 @@
 
   // ---- 操作（入力は、そのトレーナーのブロックに保存） ----
   function saveAndRender() { S('kpi-mtgcfg', cfg); K.saveGoals(); K.rerender(); }
+  function setNG(o, t, v) { o.NG = o.NG || {}; var x = o.NG[t.dataset.ng] = o.NG[t.dataset.ng] || {}; x[t.dataset.k] = x[t.dataset.k] || []; x[t.dataset.k][+t.dataset.i] = v; var T = newTot(o); if (t.dataset.k === 'g') o.newGoal = T.gt || null; }
   function syncTotals(id) { var o = gobj(id); ['sess', 'pay'].forEach(function (k) { var w = o.W[k] || []; if (w.some(has)) o[k] = sum(w); }); }
   // 自動保存：打っている途中も、1文字ごとにこのiPadへ保存する（描き直さないので、入力中の位置やキーボードは動かない）
   document.addEventListener('input', function (e) {
     var t = e.target, blk = t.closest && t.closest('#mtg [data-staff]'); if (!blk || !/^(INPUT|TEXTAREA)$/.test(t.tagName)) return;
     var o = gobj(blk.dataset.staff), v = t.value === '' ? null : +t.value;
     if (t.dataset.g) { o.W[t.dataset.g] = o.W[t.dataset.g] || []; o.W[t.dataset.g][+t.dataset.i] = v; syncTotals(blk.dataset.staff); }
+    else if (t.dataset.ng) { setNG(o, t, v); }
     else if (t.dataset.l) o[t.dataset.l] = v;
     else if (t.dataset.f) o[t.dataset.f] = v;
     else if (t.dataset.ideal) { o.ideal = o.ideal || {}; o.ideal[t.dataset.ideal] = v; }
@@ -258,6 +273,7 @@
     var blk = t.closest && t.closest('#mtg [data-staff]'); if (!blk) return;
     var id = blk.dataset.staff, o = gobj(id), v = t.value === '' ? null : +t.value;
     if (t.dataset.g) { o.W[t.dataset.g] = o.W[t.dataset.g] || []; o.W[t.dataset.g][+t.dataset.i] = v; syncTotals(id); saveAndRender(); }
+    else if (t.dataset.ng) { setNG(o, t, v); saveAndRender(); }
     else if (t.dataset.l) { o[t.dataset.l] = v; saveAndRender(); }
     else if (t.dataset.f) { o[t.dataset.f] = v; saveAndRender(); }
     else if (t.dataset.ideal) { o.ideal = o.ideal || {}; o.ideal[t.dataset.ideal] = v; saveAndRender(); }

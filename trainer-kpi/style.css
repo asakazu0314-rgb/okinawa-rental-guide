@@ -181,3 +181,17 @@ table.ft .wkstart { border-left:2px solid #C9D0D6; }
 .dot.bk { background:#fff; border:2px solid var(--main); color:var(--main); width:14px; height:14px; }
 .langbtn { margin-left:8px; } .top .topbtn:first-of-type { margin-left:auto; }
 .savedtoast { position:fixed; right:16px; bottom:16px; z-index:60; background:var(--ok); color:#fff; font-size:13px; font-weight:700; padding:6px 12px; border-radius:999px; opacity:0; transform:translateY(6px); transition:all .2s; pointer-events:none; } .savedtoast.on { opacity:1; transform:none; }
+
+/* v3.2 入会（手入力）・次回予約なし */
+.ngt td input[type=number] { width: 52px; }
+.ngt .ngk { font-size: 12px; color: var(--muted, #667); white-space: nowrap; }
+.ngt tr.ngsum td, .ngt tr.ngsum th { background: #eef2f8; }
+.ngt tr.ngrow th, .ngt tr.ngrow td { border-top: 2px solid #d8dee8; }
+.ngref { margin-top: 6px; }
+.tnext { cursor: pointer; border: 2px solid transparent; }
+.tnext .tv { color: #c0392b; }
+.tnext.on { border-color: #c0392b; background: #fdecea; }
+.fchk { display: inline-flex; align-items: center; gap: 4px; font-size: 14px; white-space: nowrap; }
+.nonext { color: #c0392b; font-weight: 700; }
+tr.rownn td.stk0, tr.rownn td.stk1 { box-shadow: inset 4px 0 0 #e74c3c; }
+tr.rownn td[data-k=next] { background: #fdecea; }
