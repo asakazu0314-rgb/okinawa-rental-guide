@@ -180,3 +180,4 @@ table.ft .wkstart { border-left:2px solid #C9D0D6; }
 .dot { display:inline-grid; place-items:center; width:16px; height:16px; border-radius:50%; background:var(--main); color:#fff; font-size:10px; font-weight:700; }
 .dot.bk { background:#fff; border:2px solid var(--main); color:var(--main); width:14px; height:14px; }
 .langbtn { margin-left:8px; } .top .topbtn:first-of-type { margin-left:auto; }
+.savedtoast { position:fixed; right:16px; bottom:16px; z-index:60; background:var(--ok); color:#fff; font-size:13px; font-weight:700; padding:6px 12px; border-radius:999px; opacity:0; transform:translateY(6px); transition:all .2s; pointer-events:none; } .savedtoast.on { opacity:1; transform:none; }

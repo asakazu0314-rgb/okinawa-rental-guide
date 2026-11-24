@@ -62,7 +62,7 @@
     ['直前キャンセル（前日22:00より後）', 'Late cancellations (after 22:00 the day before)'],
     ['チェックが入っているものは「消化扱い」で実施に数えます。会員様の事情で消化にしないものは、チェックを外してください（このiPadに保存）。', 'Ticked = counted as a used session. Untick if you waive it for the client (saved on this device).'],
     ['消化扱い', 'Counted'], ['計算のルール', 'Calculation rules'], ['自動：', 'Auto: '], ['更新・追加', 'Renewal/add-on'], ['マンツーマン', '1-on-1'], ['ペア', 'Pair'], ['券', ' pass'], ['回コース', '-session course'],
-    ['試作', 'beta'], ['枠', ' slots'], ['分', ''],
+    ['✓ 自動保存しました', '✓ Saved'], ['試作', 'beta'], ['枠', ' slots'], ['分', ''],
     ['件から作成', ' rows'], ['次回予約日：', 'Next booking: '], ['前月：', 'Last month: ']
   ].sort(function (a, b) { return b[0].length - a[0].length; });
   var MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];

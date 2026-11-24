@@ -15,7 +15,11 @@
     open(b.dataset.tab); window.scrollTo(0, 0);
   });
   $('reload').addEventListener('click', function () { $('welcome').hidden = !$('welcome').hidden; window.scrollTo(0, 0); });
+  // 「保存しました」の小さな表示（自動保存のたびに少しだけ出す）
+  var toast = document.createElement('div'); toast.className = 'savedtoast'; toast.textContent = '✓ 自動保存しました'; document.body.appendChild(toast);
+  var tt = null;
   window.UI = {
+    saved: function () { toast.classList.add('on'); clearTimeout(tt); tt = setTimeout(function () { toast.classList.remove('on'); }, 1200); },
     show: function () { $('welcome').hidden = true; $('ui').hidden = false; $('reload').hidden = false; open(get()); },
     // 確認・修正タブの数字：担当が決まっていない入金＋直前キャンセルの件数
     refresh: function () {

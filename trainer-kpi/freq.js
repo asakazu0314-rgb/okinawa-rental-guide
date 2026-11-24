@@ -191,6 +191,13 @@
   }
 
   // ---- 操作 ----
+  // 自動保存：目標回数は打っている途中も保存し、その行の「残り」などもすぐ更新
+  document.addEventListener('input', function (e) {
+    var t = e.target; if (!t.closest || !t.closest('#freq') || t.dataset.set !== 'goal') return;
+    var id = t.dataset.id, st = setting(id), g = st.goal || {};
+    if (t.value === '') delete g[month]; else g[month] = +t.value;
+    save(id, 'goal', g); updateRow(id); if (window.UI && window.UI.saved) window.UI.saved();
+  });
   document.addEventListener('change', function (e) {
     var t = e.target; if (!t.closest || !t.closest('#freq')) return;
     if (t.id === 'fk') { ui.kbn = t.value; render(month); return; }

@@ -236,6 +236,20 @@
   // ---- 操作（入力は、そのトレーナーのブロックに保存） ----
   function saveAndRender() { S('kpi-mtgcfg', cfg); K.saveGoals(); K.rerender(); }
   function syncTotals(id) { var o = gobj(id); ['sess', 'pay'].forEach(function (k) { var w = o.W[k] || []; if (w.some(has)) o[k] = sum(w); }); }
+  // 自動保存：打っている途中も、1文字ごとにこのiPadへ保存する（描き直さないので、入力中の位置やキーボードは動かない）
+  document.addEventListener('input', function (e) {
+    var t = e.target, blk = t.closest && t.closest('#mtg [data-staff]'); if (!blk || !/^(INPUT|TEXTAREA)$/.test(t.tagName)) return;
+    var o = gobj(blk.dataset.staff), v = t.value === '' ? null : +t.value;
+    if (t.dataset.g) { o.W[t.dataset.g] = o.W[t.dataset.g] || []; o.W[t.dataset.g][+t.dataset.i] = v; syncTotals(blk.dataset.staff); }
+    else if (t.dataset.l) o[t.dataset.l] = v;
+    else if (t.dataset.f) o[t.dataset.f] = v;
+    else if (t.dataset.ideal) { o.ideal = o.ideal || {}; o.ideal[t.dataset.ideal] = v; }
+    else if (t.dataset.after != null) { o.after = o.after || []; o.after[+t.dataset.after] = v; }
+    else if (t.dataset.wn) { o[t.dataset.wn] = o[t.dataset.wn] || []; o[t.dataset.wn][+t.dataset.i] = t.value; }
+    else if (t.dataset.n) o[t.dataset.n] = t.value;
+    else return;
+    K.saveGoals(); if (window.UI && window.UI.saved) window.UI.saved();
+  });
   document.addEventListener('change', function (e) {
     var t = e.target;
     if (t.id === 'mstaff') { cfg.staff = t.value; saveAndRender(); return; }
