@@ -362,8 +362,11 @@
 
   // ---- 操作 ----
   $('files').addEventListener('change', function (e) {
-    var fs = Array.prototype.slice.call(e.target.files), left = fs.length;
-    if (!fs.length) return;
+    var all = Array.prototype.slice.call(e.target.files);
+    var fs = all.filter(function (f) { return /\.csv$/i.test(f.name); }), left = fs.length;
+    var ng = all.filter(function (f) { return fs.indexOf(f) < 0; }).map(function (f) { return f.name; });
+    if (ng.length) alert('CSVではないファイルは読み込みません：' + ng.join('、') + '\nGym\'sで書き出したCSV（.csv）を選んでください。');
+    if (!fs.length) { e.target.value = ''; return; }
     rows = []; tickets = []; fileNotes = []; files = []; // 取り込み直したら、前のデータは使わない（古い状態が残らないように）
     fs.forEach(function (f) {
       var rd = new FileReader();
